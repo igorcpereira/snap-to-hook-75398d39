@@ -16,8 +16,16 @@ const NewRegistration = () => {
     setIsUploading(true);
     
     try {
+      const now = new Date();
       const formData = new FormData();
       formData.append("image", file);
+      formData.append("dia", now.getDate().toString());
+      formData.append("mes", (now.getMonth() + 1).toString());
+      formData.append("ano", now.getFullYear().toString());
+      formData.append("hora", now.getHours().toString());
+      formData.append("minuto", now.getMinutes().toString());
+      formData.append("segundo", now.getSeconds().toString());
+      formData.append("timestamp", now.toISOString());
       
       const response = await fetch("https://n8n.agenciakadin.com.br/webhook-test/pamplona", {
         method: "POST",
