@@ -1,14 +1,18 @@
 import { useState, useRef } from "react";
-import { Camera, Upload, Edit } from "lucide-react";
+import { Camera, Upload, Edit, X, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 const NewRegistration = () => {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,10 +54,29 @@ const NewRegistration = () => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.type.startsWith("image/")) {
-        sendImageToWebhook(file);
+        setSelectedFile(file);
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+        setShowConfirmDialog(true);
       } else {
         toast.error("Por favor, selecione uma imagem válida.");
       }
+    }
+  };
+
+  const handleConfirmSend = () => {
+    if (selectedFile) {
+      sendImageToWebhook(selectedFile);
+      setShowConfirmDialog(false);
+    }
+  };
+
+  const handleCancelSend = () => {
+    setShowConfirmDialog(false);
+    setSelectedFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl("");
     }
   };
 
@@ -144,6 +167,47 @@ const NewRegistration = () => {
           />
         </div>
       </main>
+
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar Imagem</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="relative w-full aspect-[4/3] bg-muted rounded-lg overflow-hidden">
+              {previewUrl && (
+                <img
+                  src={previewUrl}
+                  alt="Prévia"
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground text-center">
+              Esta é a imagem que será enviada. Confirma?
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={handleCancelSend}
+              disabled={isUploading}
+              className="flex-1"
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmSend}
+              disabled={isUploading}
+              className="flex-1"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              {isUploading ? "Enviando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
