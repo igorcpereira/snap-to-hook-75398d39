@@ -13,6 +13,7 @@ const NewRegistration = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
+  const [showLoadingDialog, setShowLoadingDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [webhookResponse, setWebhookResponse] = useState<any>(null);
@@ -21,6 +22,7 @@ const NewRegistration = () => {
 
   const sendImageToWebhook = async (file: File) => {
     setIsUploading(true);
+    setShowLoadingDialog(true);
     
     try {
       const now = new Date();
@@ -55,6 +57,7 @@ const NewRegistration = () => {
       toast.error("Erro ao enviar imagem. Verifique sua conexão e tente novamente.");
     } finally {
       setIsUploading(false);
+      setShowLoadingDialog(false);
     }
   };
 
@@ -217,6 +220,21 @@ const NewRegistration = () => {
               {isUploading ? "Enviando..." : "Confirmar"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLoadingDialog} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Processando Imagem</DialogTitle>
+            <DialogDescription>
+              Aguarde enquanto processamos a ficha de atendimento...
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center py-8 gap-4">
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-sm text-muted-foreground">Enviando para o servidor...</p>
+          </div>
         </DialogContent>
       </Dialog>
 
