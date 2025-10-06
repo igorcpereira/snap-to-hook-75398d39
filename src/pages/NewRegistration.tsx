@@ -37,7 +37,7 @@ const NewRegistration = () => {
       formData.append("segundo", now.getSeconds().toString());
       formData.append("timestamp", now.toISOString());
       
-      const response = await fetch("https://n8n.agenciakadin.com.br/webhook-test/pamplona", {
+      const response = await fetch("https://webhookn8n.agenciakadin.com.br/webhook/pamplona", {
         method: "POST",
         body: formData,
         mode: "cors",
