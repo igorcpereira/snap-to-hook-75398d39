@@ -6,6 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 const NewRegistration = () => {
@@ -254,6 +255,190 @@ const NewRegistration = () => {
               
               const { cabecalho, paleto, calca, camisa, colete, gravata, rodape } = parsedData;
 
+              const renderCabecalho = (data: any) => {
+                if (!data) return null;
+                return (
+                  <div className="mb-8 pb-6 border-b-2 border-border">
+                    <div className="grid grid-cols-12 gap-4 mb-3">
+                      <div className="col-span-8">
+                        <Label className="text-xs font-bold">CLIENTE</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.cliente || '-'}
+                        </div>
+                      </div>
+                      <div className="col-span-4">
+                        <Label className="text-xs font-bold">NÚMERO DA FICHA</Label>
+                        <div className="text-2xl font-bold text-destructive px-3 py-1">
+                          {data.numero_da_ficha || '-'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-12 gap-4 mb-3">
+                      <div className="col-span-5">
+                        <Label className="text-xs font-bold">FONES</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.fones || '-'}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs font-bold">MEDIDA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.medida || '-'}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs font-bold">PROVA 1</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.prova_1 || '-'}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs font-bold">PROVA 2</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.prova_2 || '-'}
+                        </div>
+                      </div>
+                      <div className="col-span-1">
+                        <Label className="text-xs font-bold">HORA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.hora || '-'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label className="text-xs font-bold">DATA DA RESERVA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.data_da_reserva || '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-bold">DATA DE DEVOLUÇÃO</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.data_de_devolucao || '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-bold">DATA DA FESTA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.data_da_festa || '-'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              };
+
+              const renderPaleto = (data: any) => {
+                if (!data) return null;
+                return (
+                  <div className="mb-8 pb-6 border-b-2 border-border">
+                    <h3 className="text-base font-bold mb-4 bg-accent/50 p-2 rounded-md uppercase">
+                      Paletó
+                    </h3>
+                    
+                    <div className="mb-3">
+                      <Label className="text-xs font-bold">PALETÓ</Label>
+                      <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                        {data.paleto || '-'}
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <Label className="text-xs font-bold">SOB MEDIDA</Label>
+                      <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                        {data.sob_medida || '-'}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-4 mb-3">
+                      <div className="col-span-4">
+                        <Label className="text-xs font-bold">CINTURA</Label>
+                        <div className="flex gap-2 items-center mt-1">
+                          <span className="text-xs">SOLTAR:</span>
+                          <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                            {data.cintura_soltar || '-'}
+                          </div>
+                          <span className="text-xs">APERTAR:</span>
+                          <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                            {data.cintura_apertar || '-'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-span-3">
+                        <Label className="text-xs font-bold">MEDIDA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.cintura_medida || '-'}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs font-bold">MARCA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.cintura_marca || '-'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-4 mb-3">
+                      <div className="col-span-4">
+                        <Label className="text-xs font-bold">COMPRIMENTO</Label>
+                        <div className="flex gap-2 items-center mt-1">
+                          <span className="text-xs">+/-:</span>
+                          <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                            {data.comprimento_ajuste || '-'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-span-3">
+                        <Label className="text-xs font-bold">MEDIDA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.comprimento_medida || '-'}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs font-bold">MARCA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.comprimento_marca || '-'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-4 mb-3">
+                      <div className="col-span-4">
+                        <Label className="text-xs font-bold">MANGA</Label>
+                        <div className="flex gap-2 items-center mt-1">
+                          <span className="text-xs">+/-:</span>
+                          <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                            {data.manga_ajuste || '-'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-span-3">
+                        <Label className="text-xs font-bold">MEDIDA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.manga_medida || '-'}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs font-bold">MARCA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.manga_marca || '-'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-xs font-bold">OUTROS</Label>
+                      <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                        {data.outros || '-'}
+                      </div>
+                    </div>
+                  </div>
+                );
+              };
+
               const renderSection = (title: string, data: any) => {
                 if (!data) return null;
                 
@@ -282,8 +467,8 @@ const NewRegistration = () => {
 
               return (
                 <div className="space-y-4 p-4">
-                  {renderSection("Cabeçalho", cabecalho)}
-                  {renderSection("Paletó", paleto)}
+                  {renderCabecalho(cabecalho)}
+                  {renderPaleto(paleto)}
                   {renderSection("Calça", calca)}
                   {renderSection("Camisa", camisa)}
                   {renderSection("Colete", colete)}
