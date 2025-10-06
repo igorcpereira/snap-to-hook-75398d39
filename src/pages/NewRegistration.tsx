@@ -439,6 +439,138 @@ const NewRegistration = () => {
                 );
               };
 
+              const renderCalca = (data: any) => {
+                if (!data) return null;
+                return (
+                  <div className="mb-8 pb-6 border-b-2 border-border">
+                    <h3 className="text-base font-bold mb-4 bg-accent/50 p-2 rounded-md uppercase">
+                      Calça
+                    </h3>
+                    
+                    <div className="mb-3">
+                      <Label className="text-xs font-bold">CALÇA</Label>
+                      <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                        {data.calca || '-'}
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <Label className="text-xs font-bold">SOB MEDIDA</Label>
+                      <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                        {data.sob_medida || '-'}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      {/* Coluna Esquerda */}
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-xs font-bold">CINTURA</Label>
+                          <div className="flex gap-2 items-center mt-1 mb-2">
+                            <span className="text-xs">SOLTAR:</span>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                              {data.cintura_soltar || '-'}
+                            </div>
+                            <span className="text-xs">APERTAR:</span>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                              {data.cintura_apertar || '-'}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">MEDIDA</Label>
+                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                                {data.cintura_medida || '-'}
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs">MARCA</Label>
+                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                                {data.cintura_marca || '-'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs font-bold">JOELHO</Label>
+                          <div className="flex gap-2 items-center mt-1 mb-2">
+                            <span className="text-xs">SOLTAR:</span>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                              {data.joelho_soltar || '-'}
+                            </div>
+                            <span className="text-xs">APERTAR:</span>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                              {data.joelho_apertar || '-'}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">BOCA</Label>
+                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                                {data.joelho_boca || '-'}
+                              </div>
+                            </div>
+                            <div>
+                              <Label className="text-xs">MARCA</Label>
+                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                                {data.joelho_marca || '-'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Coluna Direita */}
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-xs font-bold">COXA</Label>
+                          <div className="flex gap-2 items-center mt-1 mb-2">
+                            <span className="text-xs">SOLTAR:</span>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                              {data.coxa_soltar || '-'}
+                            </div>
+                            <span className="text-xs">APERTAR:</span>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                              {data.coxa_apertar || '-'}
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-xs">MARCA</Label>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                              {data.coxa_marca || '-'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-xs font-bold">BARRA</Label>
+                          <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1 mb-2">
+                            {data.barra_observacao || '-'}
+                          </div>
+                          <div className="flex gap-2 items-center mb-2">
+                            <span className="text-xs">SOLTAR:</span>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                              {data.barra_soltar || '-'}
+                            </div>
+                            <span className="text-xs">APERTAR:</span>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                              {data.barra_apertar || '-'}
+                            </div>
+                          </div>
+                          <div>
+                            <Label className="text-xs">MEDIDA</Label>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                              {data.barra_medida || '-'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              };
+
               const renderSection = (title: string, data: any) => {
                 if (!data) return null;
                 
@@ -469,7 +601,7 @@ const NewRegistration = () => {
                 <div className="space-y-4 p-4">
                   {renderCabecalho(cabecalho)}
                   {renderPaleto(paleto)}
-                  {renderSection("Calça", calca)}
+                  {renderCalca(calca)}
                   {renderSection("Camisa", camisa)}
                   {renderSection("Colete", colete)}
                   {renderSection("Gravata", gravata)}
