@@ -5,14 +5,17 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
 const NewRegistration = () => {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showResponseDialog, setShowResponseDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [webhookResponse, setWebhookResponse] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,8 +47,9 @@ const NewRegistration = () => {
       const result = await response.json();
       console.log("Resposta do webhook:", result);
       
+      setWebhookResponse(result);
+      setShowResponseDialog(true);
       toast.success("Imagem enviada com sucesso!");
-      setTimeout(() => navigate("/"), 1500);
     } catch (error) {
       console.error("Erro ao enviar imagem:", error);
       toast.error("Erro ao enviar imagem. Verifique sua conexão e tente novamente.");
@@ -211,6 +215,33 @@ const NewRegistration = () => {
             >
               <Check className="w-4 h-4 mr-2" />
               {isUploading ? "Enviando..." : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Resposta do Webhook</DialogTitle>
+            <DialogDescription>
+              Dados retornados pelo servidor
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+            <pre className="text-sm">
+              <code>{JSON.stringify(webhookResponse, null, 2)}</code>
+            </pre>
+          </ScrollArea>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setShowResponseDialog(false);
+                navigate("/");
+              }}
+              className="w-full sm:w-auto"
+            >
+              Fechar e Voltar
             </Button>
           </DialogFooter>
         </DialogContent>
