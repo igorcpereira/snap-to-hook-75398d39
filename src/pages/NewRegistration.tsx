@@ -772,6 +772,61 @@ const NewRegistration = () => {
                   </div>
                 );
               };
+
+              const renderRodape = (data: any) => {
+                if (!data) return null;
+                return (
+                  <div className="mb-8 pb-6">
+                    <h3 className="text-base font-bold mb-4 bg-accent/50 p-2 rounded-md uppercase">
+                      Rodapé
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs font-bold">FAIXA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.faixa || '-'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-bold">SAPATO</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.sapato || '-'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-bold">ABOTOADURA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.abotoadura || '-'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-bold">OUTROS</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.outros || '-'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-bold">VALOR</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.valor || '-'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs font-bold">GARANTIA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.garantia || '-'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              };
               const renderSection = (title: string, data: any) => {
                 if (!data) return null;
                 
@@ -806,7 +861,7 @@ const NewRegistration = () => {
                   {renderCamisa(camisa)}
                   {renderColete(colete)}
                   {renderGravata(gravata)}
-                  {renderSection("Rodapé", rodape)}
+                  {renderRodape(rodape)}
                 </div>
               );
             })()}
