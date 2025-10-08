@@ -294,9 +294,53 @@ const NewRegistration = () => {
               console.log("=== PARSING DATA ===");
               console.log("webhookResponse:", webhookResponse);
               
-              const parsedData = typeof webhookResponse.resposta === 'string' 
-                ? JSON.parse(webhookResponse.resposta) 
-                : webhookResponse.resposta || {};
+              let parsedData;
+              
+              try {
+                // Verifica se a resposta é uma string e se contém "[object Object]"
+                if (typeof webhookResponse.resposta === 'string') {
+                  // Detecta se a resposta está malformada (servidor retornou objetos concatenados como string)
+                  if (webhookResponse.resposta.includes('[object Object]')) {
+                    console.error("Resposta malformada do servidor:", webhookResponse.resposta);
+                    return (
+                      <div className="p-6 bg-destructive/10 border border-destructive rounded-lg">
+                        <h3 className="text-lg font-bold text-destructive mb-2">Erro no Servidor</h3>
+                        <p className="text-sm text-foreground mb-4">
+                          O servidor retornou uma resposta inválida. O webhook n8n não formatou os dados corretamente.
+                        </p>
+                        <p className="text-xs text-muted-foreground font-mono bg-muted p-3 rounded overflow-auto">
+                          Resposta recebida: {webhookResponse.resposta}
+                        </p>
+                        <p className="text-sm text-foreground mt-4">
+                          <strong>Solução:</strong> Verifique a configuração do workflow n8n e certifique-se de que está retornando JSON válido.
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  parsedData = JSON.parse(webhookResponse.resposta);
+                } else {
+                  parsedData = webhookResponse.resposta || {};
+                }
+              } catch (error) {
+                console.error("Erro ao fazer parse do JSON:", error);
+                console.error("Resposta que causou erro:", webhookResponse.resposta);
+                
+                return (
+                  <div className="p-6 bg-destructive/10 border border-destructive rounded-lg">
+                    <h3 className="text-lg font-bold text-destructive mb-2">Erro ao Processar Resposta</h3>
+                    <p className="text-sm text-foreground mb-4">
+                      Não foi possível processar a resposta do servidor. O formato dos dados está incorreto.
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono bg-muted p-3 rounded overflow-auto max-h-32">
+                      {error instanceof Error ? error.message : 'Erro desconhecido'}
+                    </p>
+                    <p className="text-sm text-foreground mt-4">
+                      <strong>Tente novamente</strong> ou entre em contato com o suporte se o problema persistir.
+                    </p>
+                  </div>
+                );
+              }
               
               console.log("parsedData:", parsedData);
               console.log("parsedData keys:", Object.keys(parsedData || {}));
