@@ -5,6 +5,8 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FichaAtendimento } from "@/components/FichaAtendimento";
 
 interface ProcessingCard {
   id: string;
@@ -18,6 +20,7 @@ const PreCadastro = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [cards, setCards] = useState<ProcessingCard[]>([]);
+  const [selectedCard, setSelectedCard] = useState<ProcessingCard | null>(null);
 
   useEffect(() => {
     // Recebe os dados da navegação
@@ -73,7 +76,7 @@ const PreCadastro = () => {
 
   const handleCardClick = (card: ProcessingCard) => {
     if (card.status === "completed" && card.data) {
-      navigate("/novo", { state: { webhookData: card.data } });
+      setSelectedCard(card);
     }
   };
 
@@ -171,6 +174,22 @@ const PreCadastro = () => {
           )}
         </div>
       </main>
+
+      <Dialog open={!!selectedCard} onOpenChange={() => setSelectedCard(null)}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Ficha de Atendimento</DialogTitle>
+            <DialogDescription>
+              Dados extraídos da imagem
+            </DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[70vh]">
+            {selectedCard?.data && (
+              <FichaAtendimento data={selectedCard.data} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>
