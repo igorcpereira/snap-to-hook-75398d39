@@ -74,9 +74,15 @@ const NewRegistration = () => {
         console.log("Resposta type:", typeof result.resposta);
       }
       
-      setWebhookResponse(result);
-      setShowResponseDialog(true);
-      toast.success("Imagem enviada com sucesso!");
+      // Navega para a tela de pré-cadastro
+      navigate("/pre-cadastro", {
+        state: {
+          timestamp: now.toISOString(),
+          webhookData: result,
+        },
+      });
+      
+      toast.success("Imagem enviada! Processando...");
     } catch (error) {
       console.error("Erro ao enviar imagem:", error);
       
