@@ -20,12 +20,14 @@ const NewRegistration = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [webhookResponse, setWebhookResponse] = useState<any>(null);
+  const [processingTime, setProcessingTime] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const sendImageToWebhook = async (file: File) => {
     setIsUploading(true);
     setShowLoadingDialog(true);
+    const startTime = Date.now();
     
     try {
       const now = new Date();
@@ -57,10 +59,15 @@ const NewRegistration = () => {
       }
 
       const result = await response.json();
+      const endTime = Date.now();
+      const processingTimeInSeconds = ((endTime - startTime) / 1000).toFixed(2);
+      setProcessingTime(Number(processingTimeInSeconds));
+      
       console.log("=== WEBHOOK RESPONSE ===");
       console.log("Full result:", result);
       console.log("Result type:", typeof result);
       console.log("Result keys:", Object.keys(result || {}));
+      console.log("Processing time:", processingTimeInSeconds, "seconds");
       
       if (result && result.resposta) {
         console.log("Resposta field:", result.resposta);
@@ -284,7 +291,14 @@ const NewRegistration = () => {
       <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Ficha de Atendimento</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Ficha de Atendimento</span>
+              {processingTime > 0 && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  Processado em {processingTime}s
+                </span>
+              )}
+            </DialogTitle>
             <DialogDescription>
               Dados extraídos da imagem
             </DialogDescription>
