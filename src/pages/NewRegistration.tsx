@@ -297,73 +297,86 @@ const NewRegistration = () => {
               let parsedData;
               
               try {
-                // Verifica se a resposta é uma string e se contém "[object Object]"
-                if (typeof webhookResponse.resposta === 'string') {
-                  // Detecta se a resposta está malformada (servidor retornou objetos concatenados como string)
-                  if (webhookResponse.resposta.includes('[object Object]')) {
-                    console.error("Resposta malformada do servidor:", webhookResponse.resposta);
-                    return (
-                      <div className="p-6 bg-destructive/10 border border-destructive rounded-lg">
-                        <h3 className="text-lg font-bold text-destructive mb-2">Erro no Servidor</h3>
-                        <p className="text-sm text-foreground mb-4">
-                          O servidor retornou uma resposta inválida. O webhook n8n não formatou os dados corretamente.
-                        </p>
-                        <p className="text-xs text-muted-foreground font-mono bg-muted p-3 rounded overflow-auto">
-                          Resposta recebida: {webhookResponse.resposta}
-                        </p>
-                        <p className="text-sm text-foreground mt-4">
-                          <strong>Solução:</strong> Verifique a configuração do workflow n8n e certifique-se de que está retornando JSON válido.
-                        </p>
-                      </div>
-                    );
+                // Novo formato: array [{ fields: {...} }]
+                if (Array.isArray(webhookResponse)) {
+                  parsedData = webhookResponse[0]?.fields || {};
+                } else if (webhookResponse?.fields) {
+                  parsedData = webhookResponse.fields;
+                } else if (webhookResponse?.resposta) {
+                  // Fallback para formato antigo
+                  if (typeof webhookResponse.resposta === 'string') {
+                    if (webhookResponse.resposta.includes('[object Object]')) {
+                      console.error("Resposta malformada do servidor:", webhookResponse.resposta);
+                      return (
+                        <div className="p-6 bg-destructive/10 border border-destructive rounded-lg">
+                          <h3 className="text-lg font-bold text-destructive mb-2">Erro no Servidor</h3>
+                          <p className="text-sm text-foreground mb-4">
+                            O servidor retornou uma resposta inválida.
+                          </p>
+                        </div>
+                      );
+                    }
+                    parsedData = JSON.parse(webhookResponse.resposta);
+                  } else {
+                    parsedData = webhookResponse.resposta;
                   }
-                  
-                  parsedData = JSON.parse(webhookResponse.resposta);
                 } else {
-                  parsedData = webhookResponse.resposta || {};
+                  parsedData = webhookResponse;
                 }
               } catch (error) {
                 console.error("Erro ao fazer parse do JSON:", error);
-                console.error("Resposta que causou erro:", webhookResponse.resposta);
-                
                 return (
                   <div className="p-6 bg-destructive/10 border border-destructive rounded-lg">
                     <h3 className="text-lg font-bold text-destructive mb-2">Erro ao Processar Resposta</h3>
-                    <p className="text-sm text-foreground mb-4">
-                      Não foi possível processar a resposta do servidor. O formato dos dados está incorreto.
-                    </p>
-                    <p className="text-xs text-muted-foreground font-mono bg-muted p-3 rounded overflow-auto max-h-32">
+                    <p className="text-sm text-foreground">
                       {error instanceof Error ? error.message : 'Erro desconhecido'}
-                    </p>
-                    <p className="text-sm text-foreground mt-4">
-                      <strong>Tente novamente</strong> ou entre em contato com o suporte se o problema persistir.
                     </p>
                   </div>
                 );
               }
               
-              console.log("parsedData:", parsedData);
-              console.log("parsedData keys:", Object.keys(parsedData || {}));
+              // Normalizar nomes das seções (maiúsculas → minúsculas)
+              const normalized = {
+                cabecalho: parsedData.Cabecalho || parsedData.cabecalho || {},
+                paleto: parsedData.paleto || {},
+                calca: parsedData.calca || {},
+                camisa: parsedData.Camisa || parsedData.camisa || {},
+                colete: parsedData.colete || {},
+                gravata: parsedData.gravata || {},
+                rodape: parsedData.rodape || {}
+              };
               
-              const { cabecalho, paleto, calca, camisa, colete, gravata, rodape } = parsedData;
+              const { cabecalho, paleto, calca, camisa, colete, gravata, rodape } = normalized;
               
               console.log("Extracted sections:", { cabecalho, paleto, calca, camisa, colete, gravata, rodape });
 
               const renderCabecalho = (data: any) => {
                 if (!data) return null;
+                
+                const nome = data.nome || data.cliente_nome || '-';
+                const numeroFicha = data.numero_ficha || '-';
+                const telefone = String(data.telefone || data.cliente_telefone || '-');
+                
+                const getTipo = () => {
+                  if (data.tipo_ajuste) return 'Ajuste';
+                  if (data.tipo_aluguel) return 'Aluguel';
+                  if (data.tipo_venda) return 'Venda';
+                  return data.tipo || '-';
+                };
+                
                 return (
                   <div className="mb-8 pb-6 border-b-2 border-border">
                     <div className="grid grid-cols-12 gap-4 mb-3">
                       <div className="col-span-8">
                         <Label className="text-xs font-bold">CLIENTE</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.cliente_nome || '-'}
+                          {nome}
                         </div>
                       </div>
                       <div className="col-span-4">
                         <Label className="text-xs font-bold">NÚMERO DA FICHA</Label>
                         <div className="text-2xl font-bold text-destructive px-3 py-1">
-                          {data.numero_ficha || '-'}
+                          {numeroFicha}
                         </div>
                       </div>
                     </div>
@@ -372,34 +385,49 @@ const NewRegistration = () => {
                       <div className="col-span-5">
                         <Label className="text-xs font-bold">FONES</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.cliente_telefone || '-'}
+                          {telefone}
                         </div>
                       </div>
                       <div className="col-span-2">
-                        <Label className="text-xs font-bold">MEDIDA</Label>
+                        <Label className="text-xs font-bold">TIPO</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.tipo || '-'}
+                          {getTipo()}
+                        </div>
+                      </div>
+                      <div className="col-span-3">
+                        <Label className="text-xs font-bold">DATA MEDIDA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.data_medida || '-'}
                         </div>
                       </div>
                       <div className="col-span-2">
+                        <Label className="text-xs font-bold">HORA MEDIDA</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.hora_medida || '-'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-4 mb-3">
+                      <div className="col-span-3">
                         <Label className="text-xs font-bold">PROVA 1</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
                           {data.data_prova1 || '-'}
                         </div>
                       </div>
-                      <div className="col-span-1">
+                      <div className="col-span-2">
                         <Label className="text-xs font-bold">HORA 1</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
                           {data.hora_prova1 || '-'}
                         </div>
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-3">
                         <Label className="text-xs font-bold">PROVA 2</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
                           {data.data_prova2 || '-'}
                         </div>
                       </div>
-                      <div className="col-span-1">
+                      <div className="col-span-2">
                         <Label className="text-xs font-bold">HORA 2</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
                           {data.hora_prova2 || '-'}
@@ -407,13 +435,7 @@ const NewRegistration = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label className="text-xs font-bold">DATA DA RETIRADA</Label>
-                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.data_retirada || '-'}
-                        </div>
-                      </div>
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-xs font-bold">DATA DE DEVOLUÇÃO</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
@@ -441,15 +463,15 @@ const NewRegistration = () => {
                     
                     <div className="grid grid-cols-2 gap-4 mb-3">
                       <div>
-                        <Label className="text-xs font-bold">COR</Label>
+                        <Label className="text-xs font-bold">DESCRIÇÃO</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.paleto_cor || '-'}
+                          {data.paleto_descritivo || '-'}
                         </div>
                       </div>
                       <div>
-                        <Label className="text-xs font-bold">TAMANHO</Label>
-                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.paleto_tamanho || '-'}
+                        <Label className="text-xs font-bold">VALOR</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1 font-semibold text-green-600">
+                          {data.paleto_valor ? `R$ ${data.paleto_valor}` : '-'}
                         </div>
                       </div>
                     </div>
@@ -457,7 +479,7 @@ const NewRegistration = () => {
                     <div className="mb-3">
                       <Label className="text-xs font-bold">SOB MEDIDA</Label>
                       <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                        {data.paleto_sob_medida || '-'}
+                        {data.paleto_sobmedida || data.paleto_sob_medida || '-'}
                       </div>
                     </div>
 
@@ -478,13 +500,13 @@ const NewRegistration = () => {
                       <div className="col-span-3">
                         <Label className="text-xs font-bold">MEDIDA</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.paleto_cintura_valor_cm || (data.paleto_cintura_medida_checkbox ? '✓' : '-')}
+                          {data.paleto_cintura_medida_valor || (data.paleto_cintura_medida_checkbox ? '☑' : '☐')}
                         </div>
                       </div>
                       <div className="col-span-2">
                         <Label className="text-xs font-bold">MARCA</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.paleto_cintura_marca_checkbox ? '✓' : '-'}
+                          {data.paleto_cintura_marca_checkbox ? '☑' : '☐'}
                         </div>
                       </div>
                     </div>
@@ -493,26 +515,26 @@ const NewRegistration = () => {
                       <div className="col-span-4">
                         <Label className="text-xs font-bold">COMPRIMENTO</Label>
                         <div className="flex gap-2 items-center mt-1">
-                          <span className="text-xs">SOLTAR:</span>
+                          <span className="text-xs">MENOS:</span>
                           <div className="text-sm bg-muted/30 px-2 py-1 rounded">
-                            {data.paleto_comprimento_soltar || '-'}
+                            {data.paleto_comprimento_menos || '-'}
                           </div>
-                          <span className="text-xs">APERTAR:</span>
+                          <span className="text-xs">MAIS:</span>
                           <div className="text-sm bg-muted/30 px-2 py-1 rounded">
-                            {data.paleto_comprimento_apertar || '-'}
+                            {data.paleto_comprimento_mais || '-'}
                           </div>
                         </div>
                       </div>
                       <div className="col-span-3">
                         <Label className="text-xs font-bold">MEDIDA</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.paleto_comprimento_valor_cm || (data.paleto_comprimento_medida_checkbox ? '✓' : '-')}
+                          {data.paleto_comprimento_medida || (data.paleto_comprimento_medida_checkbox ? '☑' : '☐')}
                         </div>
                       </div>
                       <div className="col-span-2">
                         <Label className="text-xs font-bold">MARCA</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.paleto_comprimento_marca_checkbox ? '✓' : '-'}
+                          {data.paleto_comprimento_marca_checkbox ? '☑' : '☐'}
                         </div>
                       </div>
                     </div>
@@ -521,29 +543,38 @@ const NewRegistration = () => {
                       <div className="col-span-4">
                         <Label className="text-xs font-bold">MANGA</Label>
                         <div className="flex gap-2 items-center mt-1">
-                          <span className="text-xs">SOLTAR:</span>
+                          <span className="text-xs">MENOS:</span>
                           <div className="text-sm bg-muted/30 px-2 py-1 rounded">
-                            {data.paleto_manga_soltar || '-'}
+                            {data.paleto_manga_menos || '-'}
                           </div>
-                          <span className="text-xs">APERTAR:</span>
+                          <span className="text-xs">MAIS:</span>
                           <div className="text-sm bg-muted/30 px-2 py-1 rounded">
-                            {data.paleto_manga_apertar || '-'}
+                            {data.paleto_manga_mais || '-'}
                           </div>
                         </div>
                       </div>
                       <div className="col-span-3">
                         <Label className="text-xs font-bold">MEDIDA</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.paleto_manga_valor_cm || (data.paleto_manga_medida_checkbox ? '✓' : '-')}
+                          {data.paleto_manga_medida_info || (data.paleto_manga_medida_checkbox ? '☑' : '☐')}
                         </div>
                       </div>
                       <div className="col-span-2">
                         <Label className="text-xs font-bold">MARCA</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.paleto_manga_marca_checkbox ? '✓' : '-'}
+                          {data.paleto_manga_marca_checkbox ? '☑' : '☐'}
                         </div>
                       </div>
                     </div>
+
+                    {data.paleto_descritivo && (
+                      <div className="mb-3">
+                        <Label className="text-xs font-bold">DESCRIÇÃO</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.paleto_descritivo}
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <Label className="text-xs font-bold">OUTROS</Label>
@@ -563,17 +594,25 @@ const NewRegistration = () => {
                       Calça
                     </h3>
                     
-                    <div className="mb-3">
-                      <Label className="text-xs font-bold">TAMANHO</Label>
-                      <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                        {data.calca_tamanho || '-'}
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <Label className="text-xs font-bold">DESCRIÇÃO</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
+                          {data.calca_descritivo || '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-bold">VALOR</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1 font-semibold text-green-600">
+                          {data.calca_valor ? `R$ ${data.calca_valor}` : '-'}
+                        </div>
                       </div>
                     </div>
 
                     <div className="mb-4">
                       <Label className="text-xs font-bold">SOB MEDIDA</Label>
                       <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                        {data.calca_sob_medida || '-'}
+                        {data.calca_sobmedida || data.calca_sob_medida || '-'}
                       </div>
                     </div>
 
@@ -596,13 +635,13 @@ const NewRegistration = () => {
                             <div>
                               <Label className="text-xs">MEDIDA</Label>
                               <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                                {data.calca_cintura_valor_cm || (data.calca_cintura_medida_checkbox ? '✓' : '-')}
+                                {data.calca_cintura_medida_text || (data.calca_cintura_medida_box ? '☑' : '☐')}
                               </div>
                             </div>
                             <div>
                               <Label className="text-xs">MARCA</Label>
                               <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                                {data.calca_cintura_marca_checkbox ? '✓' : '-'}
+                                {data.calca_cintura_marca ? '☑' : '☐'}
                               </div>
                             </div>
                           </div>
@@ -611,10 +650,6 @@ const NewRegistration = () => {
                         <div>
                           <Label className="text-xs font-bold">JOELHO</Label>
                           <div className="flex gap-2 items-center mt-1 mb-2">
-                            <span className="text-xs">SOLTAR:</span>
-                            <div className="text-sm bg-muted/30 px-2 py-1 rounded">
-                              {data.calca_joelho_soltar || '-'}
-                            </div>
                             <span className="text-xs">APERTAR:</span>
                             <div className="text-sm bg-muted/30 px-2 py-1 rounded">
                               {data.calca_joelho_apertar || '-'}
@@ -624,13 +659,13 @@ const NewRegistration = () => {
                             <div>
                               <Label className="text-xs">BOCA</Label>
                               <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                                {data.calca_joelho_boca_checkbox ? '✓' : '-'}
+                                {data.calca_joelho_boca_text || (data.calca_joelho_boca_box ? '☑' : '☐')}
                               </div>
                             </div>
                             <div>
                               <Label className="text-xs">MARCA</Label>
                               <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                                {data.calca_joelho_marca_checkbox ? '✓' : '-'}
+                                {data.calca_joelho_marca_box ? '☑' : '☐'}
                               </div>
                             </div>
                           </div>
@@ -652,22 +687,16 @@ const NewRegistration = () => {
                             </div>
                           </div>
                           <div>
-                            <Label className="text-xs">MEDIDA</Label>
-                            <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                              {data.calca_coxa_valor_cm || (data.calca_coxa_medida_checkbox ? '✓' : '-')}
-                            </div>
-                          </div>
-                          <div>
                             <Label className="text-xs">MARCA</Label>
                             <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                              {data.calca_coxa_marca_checkbox ? '✓' : '-'}
+                              {data.calca_coxa_marca ? '☑' : '☐'}
                             </div>
                           </div>
                         </div>
 
                         <div>
                           <Label className="text-xs font-bold">BARRA</Label>
-                          <div className="flex gap-2 items-center mb-2">
+                          <div className="flex gap-2 items-center mt-1 mb-2">
                             <span className="text-xs">SOLTAR:</span>
                             <div className="text-sm bg-muted/30 px-2 py-1 rounded">
                               {data.calca_barra_soltar || '-'}
@@ -677,20 +706,20 @@ const NewRegistration = () => {
                               {data.calca_barra_apertar || '-'}
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <Label className="text-xs">MEDIDA</Label>
-                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                                {data.calca_barra_valor_cm || (data.calca_barra_medida_checkbox ? '✓' : '-')}
-                              </div>
-                            </div>
-                            <div>
-                              <Label className="text-xs">MARCA</Label>
-                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                                {data.calca_barra_marca_checkbox ? '✓' : '-'}
-                              </div>
+                          <div>
+                            <Label className="text-xs">MEDIDA</Label>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                              {data.calca_barra_medida_text || (data.calca_barra_medida_box ? '☑' : '☐')}
                             </div>
                           </div>
+                          {data.calca_barra_descritivo && (
+                            <div className="mt-2">
+                              <Label className="text-xs">DESCRIÇÃO</Label>
+                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                                {data.calca_barra_descritivo}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -706,113 +735,120 @@ const NewRegistration = () => {
                       Camisa
                     </h3>
                     
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-2 gap-4 mb-3">
                       <div>
-                        <Label className="text-xs font-bold">COR</Label>
+                        <Label className="text-xs font-bold">DESCRIÇÃO</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.camisa_cor || '-'}
+                          {data.camisa_descritivo || '-'}
                         </div>
                       </div>
                       <div>
-                        <Label className="text-xs font-bold">TAMANHO</Label>
-                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.camisa_tamanho || '-'}
+                        <Label className="text-xs font-bold">VALOR</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1 font-semibold text-green-600">
+                          {data.camisa_valor ? `R$ ${data.camisa_valor}` : '-'}
                         </div>
                       </div>
                     </div>
 
-                    <div className="mb-4">
+                    <div className="mb-3">
                       <Label className="text-xs font-bold">SOB MEDIDA</Label>
                       <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
                         {data.camisa_sob_medida || '-'}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                      {/* Coluna Esquerda */}
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-xs font-bold">COLARINHO</Label>
-                          <div className="mt-2 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs">{data.camisa_colarinho_original_checkbox ? '☑' : '☐'} ORIGINAL:</span>
-                              <div className="text-sm bg-muted/30 px-2 py-1 rounded flex-1">
-                                {data.camisa_colarinho_original_medida || '-'}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs">{data.camisa_colarinho_ponta_checkbox ? '☑' : '☐'} PONTA:</span>
-                              <div className="text-sm bg-muted/30 px-2 py-1 rounded flex-1">
-                                {data.camisa_colarinho_ponta_medida || '-'}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs">{data.camisa_colarinho_alargador_checkbox ? '☑' : '☐'} ALARGADOR:</span>
-                              <div className="text-sm bg-muted/30 px-2 py-1 rounded flex-1">
-                                {data.camisa_colarinho_alargador_medida || '-'}
-                              </div>
-                            </div>
-                          </div>
+                    <div className="mb-4">
+                      <Label className="text-xs font-bold">COLARINHO</Label>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{data.camisa_colarinho_original ? '☑' : '☐'}</span>
+                          <span className="text-xs">ORIGINAL</span>
                         </div>
-
-                        <div>
-                          <Label className="text-xs font-bold">CINTURA</Label>
-                          <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div>
-                              <span className="text-xs">{data.camisa_cintura_pence_checkbox ? '☑' : '☐'} PENCE:</span>
-                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                                {data.camisa_cintura_pence_medida || '-'}
-                              </div>
-                            </div>
-                            <div>
-                              <span className="text-xs">{data.camisa_cintura_lateral_checkbox ? '☑' : '☐'} LATERAL:</span>
-                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                                {data.camisa_cintura_lateral_medida || '-'}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="mt-2">
-                            <Label className="text-xs">{data.camisa_cintura_marca_checkbox ? '☑' : '☐'} MARCA</Label>
-                            <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                              {data.camisa_cintura_marca_medida || '-'}
-                            </div>
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{data.camisa_colarinho_ponta ? '☑' : '☐'}</span>
+                          <span className="text-xs">PONTA</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{data.camisa_colarinho_alargador ? '☑' : '☐'}</span>
+                          <span className="text-xs">ALARGADOR</span>
                         </div>
                       </div>
-
-                      {/* Coluna Direita */}
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-xs font-bold">MANGA</Label>
-                          <div className="grid grid-cols-3 gap-2 mt-2">
-                            <div>
-                              <span className="text-xs">{data.camisa_manga_menos_checkbox ? '☑' : '☐'} -:</span>
-                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                                {data.camisa_manga_menos_medida || '-'}
-                              </div>
-                            </div>
-                            <div>
-                              <Label className="text-xs">MEDIDA</Label>
-                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                                {data.camisa_manga_medida || '-'}
-                              </div>
-                            </div>
-                            <div>
-                              <Label className="text-xs">APERTAR</Label>
-                              <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
-                                {data.camisa_manga_apertar || '-'}
-                              </div>
-                            </div>
-                          </div>
+                      {data.camisa_colarinho_info && (
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-2">
+                          {data.camisa_colarinho_info}
                         </div>
+                      )}
+                    </div>
 
-                        <div>
-                          <Label className="text-xs font-bold">OUTROS</Label>
-                          <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                            {data.camisa_outros_texto || '-'}
-                          </div>
+                    <div className="mb-4">
+                      <Label className="text-xs font-bold">CINTURA</Label>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{data.camisa_cintura_marca ? '☑' : '☐'}</span>
+                          <span className="text-xs">MARCA</span>
+                          {data.camisa_cintura_marca_info && (
+                            <span className="text-xs bg-muted/30 px-2 py-1 rounded">
+                              {data.camisa_cintura_marca_info}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{data.camisa_cintura_lateral ? '☑' : '☐'}</span>
+                          <span className="text-xs">LATERAL</span>
+                          {data.camisa_cintura_lateral_info && (
+                            <span className="text-xs bg-muted/30 px-2 py-1 rounded">
+                              {data.camisa_cintura_lateral_info}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{data.camisa_cintura_pence ? '☑' : '☐'}</span>
+                          <span className="text-xs">PENCE</span>
+                          {data.camisa_cintura_pence_info && (
+                            <span className="text-xs bg-muted/30 px-2 py-1 rounded">
+                              {data.camisa_cintura_pence_info}
+                            </span>
+                          )}
                         </div>
                       </div>
+                      {data.camisa_cintura_info && (
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-2">
+                          {data.camisa_cintura_info}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mb-4">
+                      <Label className="text-xs font-bold">MANGA</Label>
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{data.camisa_manga_apertar_checkbox === '☑' ? '☑' : '☐'}</span>
+                          <span className="text-xs">APERTAR</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{data.camisa_manga_menos_checkbox === '☑' ? '☑' : '☐'}</span>
+                          <span className="text-xs">MENOS</span>
+                          {data.camisa_manga_menos_info && (
+                            <span className="text-xs bg-muted/30 px-2 py-1 rounded">
+                              {data.camisa_manga_menos_info}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{data.camisa_manga_medida_checkbox === '☑' ? '☑' : '☐'}</span>
+                          <span className="text-xs">MEDIDA</span>
+                          {data.camisa_manga_medida_info && (
+                            <span className="text-xs bg-muted/30 px-2 py-1 rounded">
+                              {data.camisa_manga_medida_info}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {(data.camisa_manga_info || data.camisa_manga_texto) && (
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-2">
+                          {data.camisa_manga_info || data.camisa_manga_texto}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -826,48 +862,70 @@ const NewRegistration = () => {
                       Colete
                     </h3>
                     
-                    <div className="mb-4">
+                    <div className="mb-3">
                       <Label className="text-xs font-bold">SOB MEDIDA</Label>
                       <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                        {data.colete_sob_medida || '-'}
+                        {data.colete_sobmedida || data.colete_sob_medida || '-'}
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-xs font-bold">PEITO</Label>
-                        <div className="flex gap-2 items-center mt-2">
-                          <span className="text-xs">SOLTAR:</span>
-                          <div className="text-sm bg-muted/30 px-2 py-1 rounded">
-                            {data.colete_peito_soltar || '-'}
-                          </div>
-                          <span className="text-xs">APERTAR:</span>
-                          <div className="text-sm bg-muted/30 px-2 py-1 rounded">
-                            {data.colete_peito_apertar || '-'}
-                          </div>
-                          <span className="text-xs ml-4">{data.colete_peito_marca_checkbox ? '☑' : '☐'} MARCA:</span>
-                          <div className="text-sm bg-muted/30 px-2 py-1 rounded flex-1">
-                            {data.colete_peito_marca_medida || '-'}
-                          </div>
+                    <div className="mb-4">
+                      <Label className="text-xs font-bold">PEITO</Label>
+                      <div className="flex gap-2 items-center mt-1 mb-2">
+                        <span className="text-xs">SOLTAR:</span>
+                        <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                          {data.colete_peito_soltar || '-'}
+                        </div>
+                        <span className="text-xs">APERTAR:</span>
+                        <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                          {data.colete_peito_apertar || '-'}
                         </div>
                       </div>
-
-                      <div>
-                        <Label className="text-xs font-bold">CINTURA</Label>
-                        <div className="flex gap-2 items-center mt-2">
-                          <span className="text-xs">SOLTAR:</span>
-                          <div className="text-sm bg-muted/30 px-2 py-1 rounded">
-                            {data.colete_cintura_soltar || '-'}
-                          </div>
-                          <span className="text-xs">APERTAR:</span>
-                          <div className="text-sm bg-muted/30 px-2 py-1 rounded">
-                            {data.colete_cintura_apertar || '-'}
-                          </div>
-                          <span className="text-xs ml-4">{data.colete_cintura_marca_checkbox ? '☑' : '☐'} MARCA:</span>
-                          <div className="text-sm bg-muted/30 px-2 py-1 rounded flex-1">
-                            {data.colete_cintura_marca_medida || '-'}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">MARCA</Label>
+                          <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                            {data.colete_peito_marca ? '☑' : '☐'}
                           </div>
                         </div>
+                        {data.colete_peito_descritivo && (
+                          <div>
+                            <Label className="text-xs">DESCRIÇÃO</Label>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                              {data.colete_peito_descritivo}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <Label className="text-xs font-bold">CINTURA</Label>
+                      <div className="flex gap-2 items-center mt-1 mb-2">
+                        <span className="text-xs">SOLTAR:</span>
+                        <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                          {data.colete_cintura_soltar || '-'}
+                        </div>
+                        <span className="text-xs">APERTAR:</span>
+                        <div className="text-sm bg-muted/30 px-2 py-1 rounded">
+                          {data.colete_cintura_apertar || '-'}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">MARCA</Label>
+                          <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                            {data.colete_cintura_marca ? '☑' : '☐'}
+                          </div>
+                        </div>
+                        {data.colete_cintura_descritivo && (
+                          <div>
+                            <Label className="text-xs">DESCRIÇÃO</Label>
+                            <div className="text-sm bg-muted/30 px-2 py-1 rounded-md mt-1">
+                              {data.colete_cintura_descritivo}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -876,31 +934,42 @@ const NewRegistration = () => {
 
               const renderGravata = (data: any) => {
                 if (!data) return null;
+                
+                const hasData = data.modelo || data.medida || data.outros || data.gravata_valor;
+                if (!hasData) return null;
+                
                 return (
                   <div className="mb-8 pb-6 border-b-2 border-border">
                     <h3 className="text-base font-bold mb-4 bg-accent/50 p-2 rounded-md uppercase">
                       Gravata
                     </h3>
                     
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4 mb-3">
                       <div>
                         <Label className="text-xs font-bold">MODELO</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.gravata_modelo || '-'}
+                          {data.modelo || '-'}
                         </div>
                       </div>
-
                       <div>
                         <Label className="text-xs font-bold">MEDIDA</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.gravata_medida || '-'}
+                          {data.medida || '-'}
                         </div>
                       </div>
+                    </div>
 
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label className="text-xs font-bold">OUTROS</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.gravata_outros_texto || '-'}
+                          {data.outros || '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs font-bold">VALOR</Label>
+                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1 font-semibold text-green-600">
+                          {data.gravata_valor ? `R$ ${data.gravata_valor}` : '-'}
                         </div>
                       </div>
                     </div>
@@ -911,89 +980,53 @@ const NewRegistration = () => {
               const renderRodape = (data: any) => {
                 if (!data) return null;
                 
-                const formatarValor = (valor: any) => {
-                  if (!valor) return '-';
-                  const num = parseFloat(valor);
-                  return isNaN(num) ? '-' : `R$ ${num.toFixed(2).replace('.', ',')}`;
-                };
-                
                 return (
-                  <div className="mb-8 pb-6">
+                  <div className="mb-8">
                     <h3 className="text-base font-bold mb-4 bg-accent/50 p-2 rounded-md uppercase">
                       Rodapé
                     </h3>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 mb-3">
                       <div>
                         <Label className="text-xs font-bold">FAIXA</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.faixa_texto || '-'}
+                          {data.rodape_faixa || '-'}
                         </div>
                       </div>
-
                       <div>
                         <Label className="text-xs font-bold">SAPATO</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.sapato_modelo && data.sapato_tamanho 
-                            ? `${data.sapato_modelo} - Tam. ${data.sapato_tamanho}`
-                            : data.sapato_modelo || data.sapato_tamanho || '-'}
+                          {data.rodape_sapato || '-'}
                         </div>
                       </div>
+                    </div>
 
+                    <div className="grid grid-cols-2 gap-4 mb-3">
                       <div>
                         <Label className="text-xs font-bold">ABOTOADURA</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.abotoadura || '-'}
+                          {data.rodape_botoadura || '-'}
                         </div>
                       </div>
-
                       <div>
                         <Label className="text-xs font-bold">OUTROS</Label>
                         <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.sapato_outros_texto || '-'}
+                          {data.rodape_outros || '-'}
                         </div>
                       </div>
+                    </div>
 
-                      <div className="col-span-2">
-                        <Label className="text-xs font-bold">VALORES</Label>
-                        <div className="grid grid-cols-3 gap-2 mt-1">
-                          <div>
-                            <span className="text-xs text-muted-foreground">Bruto:</span>
-                            <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                              {formatarValor(data.valor_bruto_num)}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-xs text-muted-foreground">Desconto:</span>
-                            <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                              {formatarValor(data.valor_desconto_num)}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-xs text-muted-foreground">Final:</span>
-                            <div className="text-sm bg-green-100 dark:bg-green-900/20 px-3 py-2 rounded-md mt-1 font-semibold">
-                              {formatarValor(data.valor_final_num)}
-                            </div>
-                          </div>
+                    <div className="grid grid-cols-2 gap-4 mb-3 p-3 bg-green-50 dark:bg-green-900/10 rounded-md border border-green-200 dark:border-green-800">
+                      <div>
+                        <Label className="text-xs font-bold">VALOR TOTAL</Label>
+                        <div className="text-lg font-bold text-green-600 dark:text-green-400 mt-1">
+                          {data.rodape_valor ? `R$ ${data.rodape_valor}` : '-'}
                         </div>
                       </div>
-
                       <div>
                         <Label className="text-xs font-bold">GARANTIA</Label>
-                        <div className="text-sm bg-muted/30 px-3 py-2 rounded-md mt-1">
-                          {data.garantia_texto || '-'}
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-xs font-bold">PAGAMENTO</Label>
-                        <div className="flex gap-2 items-center mt-1">
-                          <div className="text-sm bg-muted/30 px-3 py-2 rounded-md flex-1">
-                            {data.status_pagamento || '-'}
-                          </div>
-                          {data.carimbo_pago_checkbox && (
-                            <span className="text-green-600 dark:text-green-400 font-bold">✓ PAGO</span>
-                          )}
+                        <div className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-1">
+                          {data.rodape_garantia ? `R$ ${data.rodape_garantia}` : '-'}
                         </div>
                       </div>
                     </div>
