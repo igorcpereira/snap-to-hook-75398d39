@@ -1,6 +1,8 @@
 import { Camera, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +16,22 @@ interface HeaderProps {
 
 const Header = ({ title }: HeaderProps) => {
   const { user, signOut } = useAuth();
+  const [nomeUsuario, setNomeUsuario] = useState<string>('Vendedor');
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from('profiles')
+        .select('nome')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.nome) {
+            setNomeUsuario(data.nome);
+          }
+        });
+    }
+  }, [user]);
 
   return (
     <header className="bg-card border-b border-border sticky top-0 z-50">
@@ -36,7 +54,10 @@ const Header = ({ title }: HeaderProps) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+            <div className="px-2 py-1.5 text-sm font-medium">
+              {nomeUsuario}
+            </div>
+            <div className="px-2 py-1.5 text-xs text-muted-foreground">
               {user?.email}
             </div>
             <DropdownMenuItem onClick={signOut} className="cursor-pointer">

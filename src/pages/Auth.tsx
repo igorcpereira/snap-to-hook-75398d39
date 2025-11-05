@@ -10,6 +10,7 @@ import { Camera } from 'lucide-react';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,6 +35,9 @@ const Auth = () => {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
+            data: {
+              nome: nome.trim(),
+            },
           },
         });
         if (error) throw error;
@@ -64,6 +68,20 @@ const Auth = () => {
         </p>
 
         <form onSubmit={handleAuth} className="space-y-4">
+          {!isLogin && (
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome</Label>
+              <Input
+                id="nome"
+                type="text"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                placeholder="Seu nome completo"
+                required
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -96,7 +114,10 @@ const Auth = () => {
         <div className="mt-4 text-center">
           <button
             type="button"
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setNome('');
+            }}
             className="text-sm text-primary hover:underline"
           >
             {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entre'}
