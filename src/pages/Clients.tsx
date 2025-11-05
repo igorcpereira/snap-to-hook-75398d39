@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { Users, Phone, ChevronRight, Calendar, DollarSign } from "lucide-react";
+import { Users, Phone, ChevronRight, Calendar, DollarSign, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -16,6 +17,7 @@ const Clients = () => {
   const [selectedCliente, setSelectedCliente] = useState<any>(null);
   const [fichasCliente, setFichasCliente] = useState<any[]>([]);
   const [loadingFichas, setLoadingFichas] = useState(false);
+  const [filtroNome, setFiltroNome] = useState("");
 
   useEffect(() => {
     const fetchClientes = async () => {
@@ -89,6 +91,11 @@ const Clients = () => {
     }
   };
 
+  // Filtrar clientes por nome
+  const clientesFiltrados = clientes.filter(cliente => 
+    cliente.nome.toLowerCase().includes(filtroNome.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <Header title="Clientes" />
@@ -111,8 +118,29 @@ const Clients = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {clientes.map((cliente) => (
+          <div className="space-y-4">
+            {/* Campo de filtro */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Filtrar por nome..."
+                value={filtroNome}
+                onChange={(e) => setFiltroNome(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {/* Lista de clientes filtrados */}
+            {clientesFiltrados.length === 0 ? (
+              <div className="bg-card rounded-2xl p-12 text-center shadow-sm">
+                <p className="text-muted-foreground text-sm">
+                  Nenhum cliente encontrado com esse nome.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {clientesFiltrados.map((cliente) => (
               <Card 
                 key={cliente.id} 
                 className="hover:shadow-md transition-all cursor-pointer active:scale-95"
@@ -139,6 +167,8 @@ const Clients = () => {
                 </CardContent>
               </Card>
             ))}
+              </div>
+            )}
           </div>
         )}
       </main>
