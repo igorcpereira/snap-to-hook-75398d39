@@ -147,6 +147,7 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
         pago: formData.pago,
         transcricao_audio: formData.observacoes_cliente || null,
         cliente_id: clienteId,
+        status: ficha.status === 'pendente' ? 'ativa' : ficha.status,
         updated_at: new Date().toISOString(),
       };
 
