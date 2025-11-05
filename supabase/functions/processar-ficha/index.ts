@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
     // Recebe a imagem
     const formData = await req.formData()
     const file = formData.get('image') as File
+    const userId = formData.get('user_id') as string
     
     if (!file) {
       throw new Error('Nenhuma imagem foi enviada')
@@ -32,6 +33,7 @@ Deno.serve(async (req) => {
       .from('fichas')
       .insert({
         status: 'pendente',
+        vendedor_id: userId,
         created_at: new Date().toISOString()
       })
       .select()
@@ -62,12 +64,11 @@ Deno.serve(async (req) => {
 
     console.log('Upload concluído:', fileName)
 
-    // 3. Atualiza a ficha com a URL do storage e status processando
+    // 3. Atualiza a ficha com a URL do storage
     await supabaseClient
       .from('fichas')
       .update({ 
-        url_bucket: fileName,
-        status: 'processando' 
+        url_bucket: fileName
       })
       .eq('id', ficha.id)
 
@@ -121,7 +122,7 @@ Deno.serve(async (req) => {
         await supabaseClient
           .from('fichas')
           .update({
-            status: 'processado',
+            status: 'ativa',
             updated_at: new Date().toISOString()
           })
           .eq('id', ficha.id)

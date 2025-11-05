@@ -106,11 +106,14 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
           // Cliente não existe - criar novo
           console.log('Cliente não encontrado. Criando novo cliente...');
           
+          const user = (await supabase.auth.getUser()).data.user;
+          
           const { data: novoCliente, error: insertError } = await supabase
             .from('clientes')
             .insert({
               nome: formData.nome_cliente || 'Cliente sem nome',
               telefone: telefone,
+              vendedor_id: user?.id,
             })
             .select('id')
             .single();

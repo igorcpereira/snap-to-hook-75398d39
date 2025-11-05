@@ -2,10 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import NewRegistration from "./pages/NewRegistration";
 import PreCadastro from "./pages/PreCadastro";
 import Clients from "./pages/Clients";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -13,14 +16,45 @@ const App = () => (
     <Toaster />
     <Sonner />
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/novo" element={<NewRegistration />} />
-        <Route path="/pre-cadastro" element={<PreCadastro />} />
-        <Route path="/clientes" element={<Clients />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/auth" element={<Auth />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/novo"
+            element={
+              <ProtectedRoute>
+                <NewRegistration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/pre-cadastro"
+            element={
+              <ProtectedRoute>
+                <PreCadastro />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/clientes"
+            element={
+              <ProtectedRoute>
+                <Clients />
+              </ProtectedRoute>
+            }
+          />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   </TooltipProvider>
 );

@@ -67,9 +67,12 @@ const PreCadastro = () => {
         // Importa supabase dinamicamente
         const { supabase } = await import("@/integrations/supabase/client");
         
+        const user = (await supabase.auth.getUser()).data.user;
+        
         const { data, error } = await supabase
           .from('fichas')
           .select('*')
+          .eq('vendedor_id', user?.id)
           .order('created_at', { ascending: false });
 
         if (error) {

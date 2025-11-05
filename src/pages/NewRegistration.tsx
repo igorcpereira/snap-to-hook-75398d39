@@ -67,7 +67,7 @@ const NewRegistration = () => {
 
       console.log('Polling ficha:', ficha.status);
 
-      if (ficha.status === 'processado') {
+      if (ficha.status === 'ativa') {
         // Ficha processada com sucesso
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
@@ -96,8 +96,11 @@ const NewRegistration = () => {
 
       console.log('Enviando imagem para Edge Function...');
 
+      const user = (await supabase.auth.getUser()).data.user;
+      
       const formData = new FormData();
       formData.append('image', file);
+      formData.append('user_id', user?.id || '');
 
       // Chama a Edge Function
       const { data, error } = await supabase.functions.invoke('processar-ficha', {
@@ -181,10 +184,10 @@ const NewRegistration = () => {
         throw new Error('Webhook re-ler-image não encontrado');
       }
 
-      // Atualiza status para processando
+      // Atualiza status para pendente
       await supabase
         .from('fichas')
-        .update({ status: 'processando' })
+        .update({ status: 'pendente' })
         .eq('id', currentFichaId);
 
       // Envia para webhook

@@ -21,6 +21,7 @@ export type Database = {
           nome: string
           telefone: string | null
           updated_at: string
+          vendedor_id: string | null
         }
         Insert: {
           created_at?: string
@@ -28,6 +29,7 @@ export type Database = {
           nome: string
           telefone?: string | null
           updated_at?: string
+          vendedor_id?: string | null
         }
         Update: {
           created_at?: string
@@ -35,6 +37,7 @@ export type Database = {
           nome?: string
           telefone?: string | null
           updated_at?: string
+          vendedor_id?: string | null
         }
         Relationships: []
       }
@@ -64,29 +67,22 @@ export type Database = {
       }
       fichas: {
         Row: {
-          abotoaduras: string | null
           calca: string | null
           camisa: string | null
           cliente_id: string | null
           codigo_ficha: string | null
-          colete: string | null
           created_at: string
           data_devolucao: string | null
           data_festa: string | null
-          data_prova_1: string | null
-          data_prova_2: string | null
           data_retirada: string | null
           descricao_cliente: string | null
-          faixa: string | null
           garantia: number | null
-          gravata: string | null
           id: string
           nome_cliente: string | null
-          outros: string | null
           pago: boolean
           paleto: string | null
           sapato: string | null
-          status: string | null
+          status: Database["public"]["Enums"]["status_ficha"]
           tags: Json | null
           telefone_cliente: string | null
           tipo: string | null
@@ -95,32 +91,26 @@ export type Database = {
           url_audio: string | null
           url_bucket: string | null
           valor: number | null
+          vendedor_id: string | null
           vendedor_responsavel: string | null
         }
         Insert: {
-          abotoaduras?: string | null
           calca?: string | null
           camisa?: string | null
           cliente_id?: string | null
           codigo_ficha?: string | null
-          colete?: string | null
           created_at?: string
           data_devolucao?: string | null
           data_festa?: string | null
-          data_prova_1?: string | null
-          data_prova_2?: string | null
           data_retirada?: string | null
           descricao_cliente?: string | null
-          faixa?: string | null
           garantia?: number | null
-          gravata?: string | null
           id?: string
           nome_cliente?: string | null
-          outros?: string | null
           pago?: boolean
           paleto?: string | null
           sapato?: string | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["status_ficha"]
           tags?: Json | null
           telefone_cliente?: string | null
           tipo?: string | null
@@ -129,32 +119,26 @@ export type Database = {
           url_audio?: string | null
           url_bucket?: string | null
           valor?: number | null
+          vendedor_id?: string | null
           vendedor_responsavel?: string | null
         }
         Update: {
-          abotoaduras?: string | null
           calca?: string | null
           camisa?: string | null
           cliente_id?: string | null
           codigo_ficha?: string | null
-          colete?: string | null
           created_at?: string
           data_devolucao?: string | null
           data_festa?: string | null
-          data_prova_1?: string | null
-          data_prova_2?: string | null
           data_retirada?: string | null
           descricao_cliente?: string | null
-          faixa?: string | null
           garantia?: number | null
-          gravata?: string | null
           id?: string
           nome_cliente?: string | null
-          outros?: string | null
           pago?: boolean
           paleto?: string | null
           sapato?: string | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["status_ficha"]
           tags?: Json | null
           telefone_cliente?: string | null
           tipo?: string | null
@@ -163,6 +147,7 @@ export type Database = {
           url_audio?: string | null
           url_bucket?: string | null
           valor?: number | null
+          vendedor_id?: string | null
           vendedor_responsavel?: string | null
         }
         Relationships: [
@@ -174,6 +159,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fichas_pre_kadin: {
+        Row: {
+          created_at: string
+          id: number
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          url?: string | null
+        }
+        Relationships: []
       }
       fichas_temporarias: {
         Row: {
@@ -276,6 +279,60 @@ export type Database = {
         }
         Relationships: []
       }
+      relacao_cliente_tag: {
+        Row: {
+          created_at: string
+          id: number
+          id_cliente: string | null
+          id_tag: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          id_cliente?: string | null
+          id_tag?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          id_cliente?: string | null
+          id_tag?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relacao_cliente_tag_id_cliente_fkey"
+            columns: ["id_cliente"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relacao_cliente_tag_id_tag_fkey"
+            columns: ["id_tag"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tags: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string | null
+        }
+        Relationships: []
+      }
       unidades: {
         Row: {
           created_at: string
@@ -350,6 +407,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      status_ficha: "erro" | "pendente" | "ativa" | "baixa"
       tipo_de_atendimento: "Aluguel" | "Venda" | "Ajuste"
       user_role: "Gestor" | "Franqueado" | "Vendedor"
     }
@@ -479,6 +537,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      status_ficha: ["erro", "pendente", "ativa", "baixa"],
       tipo_de_atendimento: ["Aluguel", "Venda", "Ajuste"],
       user_role: ["Gestor", "Franqueado", "Vendedor"],
     },
