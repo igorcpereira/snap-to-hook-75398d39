@@ -30,7 +30,6 @@ interface EditFichaModalProps {
 export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, onSuccess }: EditFichaModalProps) {
   const [loading, setLoading] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string>("");
   const [formData, setFormData] = useState({
     nome_cliente: "",
     telefone_cliente: "",
@@ -96,14 +95,6 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
           observacoes_cliente: ficha.transcricao_audio || "",
           tags: clienteTags,
         });
-        
-        // Buscar URL pública da imagem
-        if (ficha.url_bucket) {
-          const { data } = supabase.storage
-            .from('fichas')
-            .getPublicUrl(ficha.url_bucket);
-          setImageUrl(data.publicUrl);
-        }
       }
     };
     
@@ -663,9 +654,9 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
         </DialogHeader>
         
         <div className="relative w-full h-full px-6 pb-6 overflow-auto">
-          {imageUrl ? (
+          {ficha?.url_bucket ? (
             <img 
-              src={imageUrl} 
+              src={ficha.url_bucket} 
               alt="Ficha original" 
               className="w-full h-auto rounded-lg shadow-lg"
             />
