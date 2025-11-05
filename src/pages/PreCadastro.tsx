@@ -26,6 +26,24 @@ const PreCadastro = () => {
   const [selectedCard, setSelectedCard] = useState<ProcessingCard | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("todos");
 
+  const getTipoColor = (tipo?: string) => {
+    if (!tipo) return "bg-muted text-muted-foreground";
+    
+    const tipoLower = tipo.toLowerCase();
+    
+    if (tipoLower.includes("aluguel") || tipoLower.includes("alugar")) {
+      return "bg-blue-100 text-blue-700 border border-blue-200";
+    } else if (tipoLower.includes("venda") || tipoLower.includes("vender")) {
+      return "bg-green-100 text-green-700 border border-green-200";
+    } else if (tipoLower.includes("reparo") || tipoLower.includes("conserto") || tipoLower.includes("ajuste")) {
+      return "bg-orange-100 text-orange-700 border border-orange-200";
+    } else if (tipoLower.includes("prova")) {
+      return "bg-purple-100 text-purple-700 border border-purple-200";
+    } else {
+      return "bg-primary/10 text-primary border border-primary/20";
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     
@@ -322,28 +340,19 @@ const PreCadastro = () => {
 
                       <div className="flex items-center gap-1 mt-2">
                         {card.status === "processing" && (
-                          <>
-                            <Clock className="h-3 w-3 text-muted-foreground animate-pulse" />
-                            <span className="text-xs text-muted-foreground">Processando</span>
-                          </>
+                          <Clock className="h-4 w-4 text-muted-foreground animate-pulse" />
                         )}
                         {card.status === "completed" && (
-                          <>
-                            <CheckCircle className="h-3 w-3 text-green-500" />
-                            <span className="text-xs text-green-600">Processado</span>
-                          </>
+                          <CheckCircle className="h-4 w-4 text-green-500" />
                         )}
                         {card.status === "error" && (
-                          <>
-                            <XCircle className="h-3 w-3 text-destructive" />
-                            <span className="text-xs text-destructive">Erro</span>
-                          </>
+                          <XCircle className="h-4 w-4 text-destructive" />
                         )}
                       </div>
                     </div>
                     
                     <div className="flex-shrink-0">
-                      <span className="inline-block px-2 py-1 text-xs font-medium bg-primary/10 text-primary rounded">
+                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${getTipoColor(card.tipo)}`}>
                         {card.tipo || "-"}
                       </span>
                     </div>
