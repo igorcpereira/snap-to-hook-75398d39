@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Trash2 } from "lucide-react";
+import { ArrowLeft, Phone, Trash2, Search } from "lucide-react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { FichaAtendimento } from "@/components/FichaAtendimento";
 import { EditFichaModal } from "@/components/EditFichaModal";
 import { capitalizarNome } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 interface ProcessingCard {
   id: string;
   timestamp: string;
@@ -29,6 +30,7 @@ const PreCadastro = () => {
   const [isLoadingEditCard, setIsLoadingEditCard] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>("todos");
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState<string>("");
   const getTipoColor = (tipo?: string) => {
     if (!tipo) return "bg-muted text-muted-foreground";
     const tipoLower = tipo.toLowerCase();
@@ -329,10 +331,21 @@ const PreCadastro = () => {
     }
   };
   const filteredCards = cards.filter(card => {
-    if (activeFilter === "todos") return true;
-    if (activeFilter === "pendente") return card.status === "processing";
-    if (activeFilter === "erro") return card.status === "error";
-    return true;
+    // Filtro de status
+    let statusMatch = true;
+    if (activeFilter === "pendente") statusMatch = card.status === "processing";
+    if (activeFilter === "erro") statusMatch = card.status === "error";
+    
+    // Filtro de texto (busca em nome_cliente e codigo_ficha)
+    let textMatch = true;
+    if (searchText.trim()) {
+      const searchLower = searchText.toLowerCase().trim();
+      const nomeMatch = card.nome_cliente?.toLowerCase().includes(searchLower);
+      const codigoMatch = card.codigo_ficha?.toLowerCase().includes(searchLower);
+      textMatch = nomeMatch || codigoMatch;
+    }
+    
+    return statusMatch && textMatch;
   });
   const getStatusCount = (status: string) => {
     if (status === "todos") return cards.length;
@@ -345,9 +358,17 @@ const PreCadastro = () => {
       
       <main className="flex-1 p-4 pb-20">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
-            
-            
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Buscar por código ou nome do cliente..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="pl-9"
+              />
+            </div>
           </div>
 
           <Tabs value={activeFilter} onValueChange={setActiveFilter} className="mb-6">
