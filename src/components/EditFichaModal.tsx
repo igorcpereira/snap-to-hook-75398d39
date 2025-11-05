@@ -309,26 +309,10 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
       <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <DialogTitle>Editar Ficha</DialogTitle>
-              <DialogDescription>
-                Altere os campos necessários e clique em salvar
-              </DialogDescription>
-            </div>
-            {ficha?.url_bucket && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowImageModal(true)}
-                className="flex items-center gap-2"
-              >
-                <ImageIcon className="h-4 w-4" />
-                Ver Ficha
-              </Button>
-            )}
-          </div>
+          <DialogTitle>Editar Ficha</DialogTitle>
+          <DialogDescription>
+            Altere os campos necessários e clique em salvar
+          </DialogDescription>
           
           {/* Banner de processamento */}
           {isLoading && (
@@ -341,6 +325,20 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
             </div>
           )}
         </DialogHeader>
+
+        {/* Botão para visualizar ficha original */}
+        {ficha?.url_bucket && (
+          <div className="px-6 pt-4">
+            <Button
+              type="button"
+              onClick={() => setShowImageModal(true)}
+              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90"
+            >
+              <ImageIcon className="h-4 w-4" />
+              Ver Ficha Original
+            </Button>
+          </div>
+        )}
 
         <div className="space-y-6 py-4">
           {/* Cabeçalho */}
