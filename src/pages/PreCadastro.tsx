@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Clock, XCircle } from "lucide-react";
+import { ArrowLeft, Phone } from "lucide-react";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,12 @@ const PreCadastro = () => {
     } else {
       return "bg-primary/10 text-primary border border-primary/20";
     }
+  };
+
+  const getStatusText = (status: "processing" | "error") => {
+    if (status === "processing") return "Pendente";
+    if (status === "error") return "Erro";
+    return "-";
   };
 
   useEffect(() => {
@@ -316,14 +322,9 @@ const PreCadastro = () => {
                         }) : "-"}
                       </p>
 
-                      <div className="flex items-center gap-1 mt-2">
-                        {card.status === "processing" && (
-                          <Clock className="h-4 w-4 text-muted-foreground animate-pulse" />
-                        )}
-                        {card.status === "error" && (
-                          <XCircle className="h-4 w-4 text-destructive" />
-                        )}
-                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Status: {getStatusText(card.status)}
+                      </p>
                     </div>
                     
                     <div className="flex-shrink-0">
