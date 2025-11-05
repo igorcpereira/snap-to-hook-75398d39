@@ -33,7 +33,7 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
     telefone_cliente: "",
     codigo_ficha: "",
     tipo: "Aluguel",
-    status: "processing",
+    status: "pendente",
     vendedor_responsavel: "",
     data_retirada: undefined as Date | undefined,
     data_devolucao: undefined as Date | undefined,
@@ -56,7 +56,7 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
         telefone_cliente: ficha.telefone_cliente || "",
         codigo_ficha: ficha.codigo_ficha || "",
         tipo: ficha.tipo || "Aluguel",
-        status: ficha.status || "processing",
+        status: ficha.status || "pendente",
         vendedor_responsavel: ficha.vendedor_responsavel || "",
         data_retirada: ficha.data_retirada ? new Date(ficha.data_retirada) : undefined,
         data_devolucao: ficha.data_devolucao ? new Date(ficha.data_devolucao) : undefined,
@@ -289,7 +289,7 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
                   <Label htmlFor="status">Status</Label>
                   <Input
                     id="status"
-                    value={formData.status === "processing" || formData.status === "pendente" ? "Processando..." : formData.status === "erro" ? "Erro" : formData.status}
+                    value={formData.status === "pendente" ? "Pendente" : formData.status === "ativa" ? "Ativa" : formData.status === "erro" ? "Erro" : formData.status}
                     disabled
                     className="bg-muted"
                   />
