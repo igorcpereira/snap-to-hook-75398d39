@@ -14,7 +14,6 @@ const NewRegistration = () => {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showLoadingDialog, setShowLoadingDialog] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
@@ -85,7 +84,6 @@ const NewRegistration = () => {
         }
         
         setShowEditModal(false);
-        setShowLoadingDialog(false);
         setShowErrorDialog(true);
         setIsLoadingFicha(false);
       }
@@ -95,7 +93,6 @@ const NewRegistration = () => {
   const sendImageToWebhook = async (file: File) => {
     try {
       setIsUploading(true);
-      setShowLoadingDialog(true);
 
       console.log('Enviando imagem para Edge Function...');
 
@@ -117,11 +114,10 @@ const NewRegistration = () => {
       if (data.success && data.ficha_id) {
         // Ficha criada com sucesso
         setCurrentFichaId(data.ficha_id);
-        setShowLoadingDialog(false);
         
-        // Abre modal de edição com loading
+        // Abre modal de edição imediatamente com loading
         setIsLoadingFicha(true);
-        setFichaData({ id: data.ficha_id, status: 'pendente' });
+        setFichaData({ id: data.ficha_id, status: 'processando' });
         setShowEditModal(true);
         
         // Inicia polling
@@ -142,7 +138,6 @@ const NewRegistration = () => {
       }
       
       toast.error("Falha ao enviar a imagem. Tente novamente.");
-      setShowLoadingDialog(false);
       setShowErrorDialog(true);
     } finally {
       setIsUploading(false);
@@ -154,7 +149,6 @@ const NewRegistration = () => {
     
     try {
       setShowErrorDialog(false);
-      setShowLoadingDialog(true);
       
       // Busca a imagem da ficha no storage
       const { data: ficha } = await supabase
@@ -202,11 +196,10 @@ const NewRegistration = () => {
         method: 'POST',
         body: formData,
       });
-
-      setShowLoadingDialog(false);
       
-      // Abre modal novamente com loading
+      // Abre modal imediatamente com loading
       setIsLoadingFicha(true);
+      setFichaData({ id: currentFichaId, status: 'processando' });
       setShowEditModal(true);
       
       // Retoma polling
@@ -216,7 +209,6 @@ const NewRegistration = () => {
     } catch (error) {
       console.error('Erro ao reenviar imagem:', error);
       toast.error("Erro ao reenviar imagem");
-      setShowLoadingDialog(false);
       setShowErrorDialog(true);
     }
   };
@@ -402,21 +394,6 @@ const NewRegistration = () => {
               {isUploading ? "Enviando..." : "Confirmar"}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showLoadingDialog} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>Processando Imagem</DialogTitle>
-            <DialogDescription>
-              Aguarde enquanto processamos a ficha de atendimento...
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center py-8 gap-4">
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-sm text-muted-foreground">Enviando para o servidor...</p>
-          </div>
         </DialogContent>
       </Dialog>
 

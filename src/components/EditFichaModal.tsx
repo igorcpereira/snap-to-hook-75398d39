@@ -134,6 +134,17 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
           <DialogDescription>
             Altere os campos necessários e clique em salvar
           </DialogDescription>
+          
+          {/* Banner de processamento */}
+          {isLoading && (
+            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-3">
+              <div className="w-5 h-5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Processando imagem</p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">Os campos serão preenchidos automaticamente quando o processamento terminar. Você já pode editar outros campos enquanto aguarda.</p>
+              </div>
+            </div>
+          )}
         </DialogHeader>
 
         <div className="space-y-6 py-4">
