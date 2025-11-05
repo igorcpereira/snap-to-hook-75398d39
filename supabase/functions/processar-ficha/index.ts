@@ -1,0 +1,162 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.79.0'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Recebe a imagem
+    const formData = await req.formData()
+    const file = formData.get('image') as File
+    
+    if (!file) {
+      throw new Error('Nenhuma imagem foi enviada')
+    }
+
+    console.log('Recebido arquivo:', file.name, file.type, file.size)
+
+    // 1. Cria a ficha com status pendente
+    const { data: ficha, error: fichaError } = await supabaseClient
+      .from('fichas')
+      .insert({
+        status: 'pendente',
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (fichaError) {
+      console.error('Erro ao criar ficha:', fichaError)
+      throw fichaError
+    }
+
+    console.log('Ficha criada:', ficha.id)
+
+    // 2. Faz upload da imagem para o Storage
+    const fileName = `${ficha.id}_${Date.now()}.${file.name.split('.').pop()}`
+    const { error: uploadError } = await supabaseClient.storage
+      .from('fichas')
+      .upload(fileName, file, {
+        contentType: file.type,
+        upsert: false
+      })
+
+    if (uploadError) {
+      console.error('Erro ao fazer upload:', uploadError)
+      throw uploadError
+    }
+
+    console.log('Upload concluído:', fileName)
+
+    // 3. Atualiza a ficha com a URL do storage
+    await supabaseClient
+      .from('fichas')
+      .update({ url_bucket: fileName })
+      .eq('id', ficha.id)
+
+    // 4. Processa em background (não bloqueia a resposta)
+    const processInBackground = async () => {
+      try {
+        console.log('Iniciando processamento em background para ficha:', ficha.id)
+        
+        // Atualiza status para processando
+        await supabaseClient
+          .from('fichas')
+          .update({ status: 'processando' })
+          .eq('id', ficha.id)
+
+        // Busca o webhook da tabela
+        const { data: webhooks, error: webhookError } = await supabaseClient
+          .from('webhooks')
+          .select('webhook')
+          .limit(1)
+          .single()
+
+        if (webhookError || !webhooks) {
+          console.error('Erro ao buscar webhook:', webhookError)
+          throw new Error('Webhook não encontrado na tabela')
+        }
+
+        console.log('Webhook encontrado, enviando requisição...')
+
+        // Prepara FormData para enviar ao webhook
+        const webhookFormData = new FormData()
+        webhookFormData.append('image', file)
+
+        // Envia para o webhook
+        const webhookResponse = await fetch(webhooks.webhook, {
+          method: 'POST',
+          body: webhookFormData,
+        })
+
+        if (!webhookResponse.ok) {
+          throw new Error(`Webhook retornou status ${webhookResponse.status}`)
+        }
+
+        const webhookData = await webhookResponse.json()
+        console.log('Resposta do webhook recebida:', webhookData)
+
+        // Atualiza a ficha com os dados processados
+        await supabaseClient
+          .from('fichas')
+          .update({
+            status: 'processado',
+            nome_cliente: webhookData.nome || webhookData.name || null,
+            telefone_cliente: webhookData.telefone || webhookData.phone || null,
+            url_bucket: JSON.stringify(webhookData)
+          })
+          .eq('id', ficha.id)
+
+        console.log('Ficha atualizada com sucesso:', ficha.id)
+
+      } catch (error) {
+        console.error('Erro no processamento em background:', error)
+        
+        // Marca como erro
+        await supabaseClient
+          .from('fichas')
+          .update({ status: 'erro' })
+          .eq('id', ficha.id)
+      }
+    }
+
+    // Inicia o processamento em background
+    processInBackground()
+
+    // Retorna imediatamente a ficha criada
+    return new Response(
+      JSON.stringify({
+        success: true,
+        ficha_id: ficha.id,
+        message: 'Ficha criada e processamento iniciado'
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    )
+
+  } catch (error) {
+    console.error('Erro na edge function:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    )
+  }
+})

@@ -25,122 +25,44 @@ const NewRegistration = () => {
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const sendImageToWebhook = async (file: File) => {
-    setIsUploading(true);
-    const startTime = Date.now();
-    const timestamp = new Date().toISOString();
-    
-    // Importa supabase dinamicamente
-    const { supabase } = await import("@/integrations/supabase/client");
-    
-    // Insere o registro no banco com status 'pendente'
-    const { data: preCadastro, error: insertError } = await supabase
-      .from('fichas')
-      .insert({
-        created_at: timestamp,
-        status: 'pendente',
-        telefone_cliente: '',
-        nome_cliente: ''
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error('Erro ao criar pré-cadastro:', insertError);
-      toast.error('Erro ao criar pré-cadastro');
-      setIsUploading(false);
-      return;
-    }
-    
-    // Navega imediatamente para pré-cadastro
-    navigate("/pre-cadastro");
-    
     try {
-      const now = new Date();
-      const formData = new FormData();
-      formData.append("image", file);
-      formData.append("dia", now.getDate().toString());
-      formData.append("mes", (now.getMonth() + 1).toString());
-      formData.append("ano", now.getFullYear().toString());
-      formData.append("hora", now.getHours().toString());
-      formData.append("minuto", now.getMinutes().toString());
-      formData.append("segundo", now.getSeconds().toString());
-      formData.append("timestamp", now.toISOString());
-      
-      // Timeout de 60 segundos
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: O webhook não respondeu em 60 segundos')), 60000)
-      );
+      setIsUploading(true);
+      setShowLoadingDialog(true);
 
-      const fetchPromise = fetch("https://webhookn8n.agenciakadin.com.br/webhook/pamplona-v0", {
-        method: "POST",
+      console.log('Enviando imagem para Edge Function...');
+
+      // Importa supabase dinamicamente
+      const { supabase } = await import("@/integrations/supabase/client");
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      // Chama a Edge Function que processa em background
+      const { data, error } = await supabase.functions.invoke('processar-ficha', {
         body: formData,
-        mode: "cors",
       });
 
-      const response = await Promise.race([fetchPromise, timeoutPromise]) as Response;
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (error) {
+        console.error('Erro ao chamar Edge Function:', error);
+        throw error;
       }
 
-      const result = await response.json();
-      const endTime = Date.now();
-      const processingTimeInSeconds = ((endTime - startTime) / 1000).toFixed(2);
-      setProcessingTime(Number(processingTimeInSeconds));
-      
-      console.log("=== WEBHOOK RESPONSE ===");
-      console.log("Full result:", result);
-      console.log("Result type:", typeof result);
-      console.log("Result keys:", Object.keys(result || {}));
-      console.log("Processing time:", processingTimeInSeconds, "seconds");
-      
-      if (result && result.resposta) {
-        console.log("Resposta field:", result.resposta);
-        console.log("Resposta type:", typeof result.resposta);
-      }
-      
-      // Atualiza o registro no banco com o resultado
-      const phone = result?.fields?.Cabecalho?.telefone || 
-                    result?.[0]?.fields?.Cabecalho?.telefone || null;
-      const nome = result?.fields?.Cabecalho?.nome || 
-                   result?.[0]?.fields?.Cabecalho?.nome || '';
-      
-      // Atualiza status para processando
-      await supabase
-        .from('fichas')
-        .update({ status: 'processando' })
-        .eq('id', preCadastro.id);
+      console.log('Edge Function resposta:', data);
 
-      const { error: updateError } = await supabase
-        .from('fichas')
-        .update({
-          status: 'processado',
-          telefone_cliente: phone,
-          nome_cliente: nome,
-          url_bucket: JSON.stringify(result),
-        })
-        .eq('id', preCadastro.id);
+      // Navega imediatamente para a página de pré-cadastro
+      navigate('/pre-cadastro');
 
-      if (updateError) {
-        console.error('Erro ao atualizar pré-cadastro:', updateError);
-      }
+      toast.success("Processamento Iniciado", {
+        description: "A ficha está sendo processada em segundo plano.",
+      });
+
+      setShowLoadingDialog(false);
+
+    } catch (error: any) {
+      console.error('Erro:', error);
       
-      toast.success("Imagem processada com sucesso!");
-    } catch (error) {
-      console.error("Erro ao enviar imagem:", error);
-      
-      // Atualiza status para erro
-      await supabase
-        .from('fichas')
-        .update({ status: 'erro' })
-        .eq('id', preCadastro.id);
-      
-      // Verifica se é erro de timeout
-      if (error instanceof Error && error.message.includes('Timeout')) {
-        setShowTimeoutDialog(true);
-      } else {
-        toast.error("Erro ao enviar imagem. Verifique sua conexão e tente novamente.");
-      }
+      toast.error("Falha ao enviar a imagem. Tente novamente.");
+      setShowLoadingDialog(false);
     } finally {
       setIsUploading(false);
     }

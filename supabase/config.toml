@@ -1,1 +1,4 @@
 project_id = "pukcbqfjzswqmjkhwzfk"
+
+[functions.processar-ficha]
+verify_jwt = false
