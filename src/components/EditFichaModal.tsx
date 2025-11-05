@@ -101,19 +101,24 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
   }, [ficha]);
 
   const handleTranscription = (text: string) => {
-    setFormData({ ...formData, observacoes_cliente: text });
+    console.log('Texto recebido da transcrição:', text);
+    setFormData(prev => ({ ...prev, observacoes_cliente: text }));
   };
 
   const handleTagsExtracted = (tags: string[]) => {
     // Adicionar novas tags sem duplicatas (lowercase para evitar duplicatas)
     const normalizedTags = tags.map(tag => tag.toLowerCase().trim());
-    const existingTags = formData.tags.map(tag => tag.toLowerCase());
-    const newTags = normalizedTags.filter(tag => !existingTags.includes(tag));
     
-    if (newTags.length > 0) {
-      console.log('Adicionando tags:', newTags);
-      setFormData({ ...formData, tags: [...formData.tags, ...newTags] });
-    }
+    setFormData(prev => {
+      const existingTags = prev.tags.map(tag => tag.toLowerCase());
+      const newTags = normalizedTags.filter(tag => !existingTags.includes(tag));
+      
+      if (newTags.length > 0) {
+        console.log('Adicionando tags:', newTags);
+        return { ...prev, tags: [...prev.tags, ...newTags] };
+      }
+      return prev;
+    });
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
