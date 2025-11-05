@@ -51,6 +51,12 @@ const PreCadastro = () => {
     return "-";
   };
 
+  const getStatusColor = (status: "processing" | "error") => {
+    if (status === "processing") return "text-yellow-600 font-semibold";
+    if (status === "error") return "text-red-600 font-semibold";
+    return "text-muted-foreground";
+  };
+
   useEffect(() => {
     let mounted = true;
     
@@ -322,7 +328,7 @@ const PreCadastro = () => {
                         }) : "-"}
                       </p>
 
-                      <p className="text-xs text-muted-foreground">
+                      <p className={`text-xs ${getStatusColor(card.status)}`}>
                         Status: {getStatusText(card.status)}
                       </p>
                     </div>
