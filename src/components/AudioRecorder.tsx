@@ -2,13 +2,13 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AudioRecorderProps {
   onTranscriptionComplete: (text: string) => void;
-  webhookUrl: string;
 }
 
-export function AudioRecorder({ onTranscriptionComplete, webhookUrl }: AudioRecorderProps) {
+export function AudioRecorder({ onTranscriptionComplete }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -58,20 +58,16 @@ export function AudioRecorder({ onTranscriptionComplete, webhookUrl }: AudioReco
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
 
-      const response = await fetch(webhookUrl, {
-        method: "POST",
+      const { data, error } = await supabase.functions.invoke('transcrever-audio', {
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error("Erro ao enviar áudio");
+      if (error) {
+        throw error;
       }
 
-      const data = await response.json();
-      
-      // Processa a resposta no formato esperado
-      if (Array.isArray(data) && data.length > 0 && data[0].text) {
-        onTranscriptionComplete(data[0].text);
+      if (data?.text) {
+        onTranscriptionComplete(data.text);
         toast({
           title: "Sucesso",
           description: "Áudio transcrito com sucesso!",

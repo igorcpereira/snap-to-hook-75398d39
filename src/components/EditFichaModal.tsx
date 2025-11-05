@@ -26,7 +26,6 @@ interface EditFichaModalProps {
 
 export function EditFichaModal({ open, onOpenChange, ficha, onSuccess }: EditFichaModalProps) {
   const [loading, setLoading] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState<string>("");
   const [formData, setFormData] = useState({
     nome_cliente: "",
     telefone_cliente: "",
@@ -46,33 +45,6 @@ export function EditFichaModal({ open, onOpenChange, ficha, onSuccess }: EditFic
     pago: false,
     observacoes_cliente: "",
   });
-
-  // Busca o webhook ao montar o componente
-  useEffect(() => {
-    const fetchWebhook = async () => {
-      const { data, error } = await supabase
-        .from("webhooks")
-        .select("webhook")
-        .eq("nome", "descricao_cliente")
-        .single();
-
-      if (error) {
-        console.error("Erro ao buscar webhook:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar o webhook.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data?.webhook) {
-        setWebhookUrl(data.webhook);
-      }
-    };
-
-    fetchWebhook();
-  }, []);
 
   // Atualiza formData quando ficha mudar
   useEffect(() => {
@@ -359,12 +331,9 @@ export function EditFichaModal({ open, onOpenChange, ficha, onSuccess }: EditFic
                   />
                 </div>
               </div>
-              {webhookUrl && (
-                <AudioRecorder 
-                  webhookUrl={webhookUrl} 
-                  onTranscriptionComplete={handleTranscription}
-                />
-              )}
+              <AudioRecorder 
+                onTranscriptionComplete={handleTranscription}
+              />
             </div>
           </div>
 
