@@ -51,12 +51,22 @@ const PreCadastro = () => {
           else if (item.status === 'erro') mappedStatus = 'error';
           else if (item.status === 'pendente') mappedStatus = 'processing';
           
+          // Tenta fazer parse do url_bucket apenas se parecer um JSON
+          let parsedData = null;
+          if (item.url_bucket && (item.url_bucket.startsWith('{') || item.url_bucket.startsWith('['))) {
+            try {
+              parsedData = JSON.parse(item.url_bucket);
+            } catch (e) {
+              console.error('Erro ao parsear url_bucket:', e);
+            }
+          }
+          
           return {
             id: item.id,
             timestamp: item.created_at,
             status: mappedStatus,
             phone: item.telefone_cliente || undefined,
-            data: item.url_bucket ? JSON.parse(item.url_bucket) : null,
+            data: parsedData,
           };
         });
 
@@ -94,12 +104,22 @@ const PreCadastro = () => {
                 else if (newItem.status === 'erro') mappedStatus = 'error';
                 else if (newItem.status === 'pendente') mappedStatus = 'processing';
                 
+                // Tenta fazer parse do url_bucket apenas se parecer um JSON
+                let parsedData = null;
+                if (newItem.url_bucket && (newItem.url_bucket.startsWith('{') || newItem.url_bucket.startsWith('['))) {
+                  try {
+                    parsedData = JSON.parse(newItem.url_bucket);
+                  } catch (e) {
+                    console.error('Erro ao parsear url_bucket:', e);
+                  }
+                }
+                
                 const newCard: ProcessingCard = {
                   id: newItem.id,
                   timestamp: newItem.created_at,
                   status: mappedStatus,
                   phone: newItem.telefone_cliente || undefined,
-                  data: newItem.url_bucket ? JSON.parse(newItem.url_bucket) : null,
+                  data: parsedData,
                 };
                 setCards((prev) => [newCard, ...prev]);
               } else if (payload.eventType === 'UPDATE') {
@@ -110,6 +130,16 @@ const PreCadastro = () => {
                 else if (updatedItem.status === 'erro') mappedStatus = 'error';
                 else if (updatedItem.status === 'pendente') mappedStatus = 'processing';
                 
+                // Tenta fazer parse do url_bucket apenas se parecer um JSON
+                let parsedData = null;
+                if (updatedItem.url_bucket && (updatedItem.url_bucket.startsWith('{') || updatedItem.url_bucket.startsWith('['))) {
+                  try {
+                    parsedData = JSON.parse(updatedItem.url_bucket);
+                  } catch (e) {
+                    console.error('Erro ao parsear url_bucket:', e);
+                  }
+                }
+                
                 setCards((prev) =>
                   prev.map((card) =>
                     card.id === updatedItem.id
@@ -117,7 +147,7 @@ const PreCadastro = () => {
                           ...card,
                           status: mappedStatus,
                           phone: updatedItem.telefone_cliente || undefined,
-                          data: updatedItem.url_bucket ? JSON.parse(updatedItem.url_bucket) : null,
+                          data: parsedData,
                         }
                       : card
                   )
