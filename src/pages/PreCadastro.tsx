@@ -12,7 +12,6 @@ import { FichaAtendimento } from "@/components/FichaAtendimento";
 import { EditFichaModal } from "@/components/EditFichaModal";
 import { capitalizarNome } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-
 interface ProcessingCard {
   id: string;
   timestamp: string;
@@ -23,7 +22,6 @@ interface ProcessingCard {
   codigo_ficha?: string;
   tipo?: string;
 }
-
 const PreCadastro = () => {
   const navigate = useNavigate();
   const [cards, setCards] = useState<ProcessingCard[]>([]);
@@ -31,12 +29,9 @@ const PreCadastro = () => {
   const [isLoadingEditCard, setIsLoadingEditCard] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>("todos");
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
-
   const getTipoColor = (tipo?: string) => {
     if (!tipo) return "bg-muted text-muted-foreground";
-    
     const tipoLower = tipo.toLowerCase();
-    
     if (tipoLower.includes("aluguel") || tipoLower.includes("alugar")) {
       return "bg-blue-100 text-blue-700 border border-blue-200";
     } else if (tipoLower.includes("venda") || tipoLower.includes("vender")) {
@@ -47,53 +42,47 @@ const PreCadastro = () => {
       return "bg-primary/10 text-primary border border-primary/20";
     }
   };
-
   const getStatusText = (status: "processing" | "error") => {
     if (status === "processing") return "Pendente";
     if (status === "error") return "Erro";
     return "-";
   };
-
   const getStatusColor = (status: "processing" | "error") => {
     if (status === "processing") return "text-yellow-600 font-semibold";
     if (status === "error") return "text-red-600 font-semibold";
     return "text-muted-foreground";
   };
-
   useEffect(() => {
     let mounted = true;
-    
+
     // Busca todos os pré-cadastros do banco
     const fetchPreCadastros = async () => {
       try {
         // Importa supabase dinamicamente
-        const { supabase } = await import("@/integrations/supabase/client");
-        
+        const {
+          supabase
+        } = await import("@/integrations/supabase/client");
         const user = (await supabase.auth.getUser()).data.user;
-        
-        const { data, error } = await supabase
-          .from('fichas')
-          .select('*')
-          .eq('vendedor_id', user?.id)
-          .order('created_at', { ascending: false });
-
+        const {
+          data,
+          error
+        } = await supabase.from('fichas').select('*').eq('vendedor_id', user?.id).order('created_at', {
+          ascending: false
+        });
         if (error) {
           console.error('Erro ao buscar pré-cadastros:', error);
           return;
         }
-
         if (!mounted) return;
-
-        const mappedCards: ProcessingCard[] = data.map((item) => {
+        const mappedCards: ProcessingCard[] = data.map(item => {
           // Define o status baseado no campo status do banco
           let mappedStatus: "processing" | "error" = "processing";
-          
           if (item.status === 'erro') {
             mappedStatus = 'error';
           } else {
             mappedStatus = 'processing';
           }
-          
+
           // Tenta fazer parse do url_bucket apenas se parecer um JSON
           let parsedData = null;
           if (item.url_bucket && (item.url_bucket.startsWith('{') || item.url_bucket.startsWith('['))) {
@@ -103,7 +92,6 @@ const PreCadastro = () => {
               console.error('Erro ao parsear url_bucket:', e);
             }
           }
-          
           return {
             id: item.id,
             timestamp: item.created_at,
@@ -112,135 +100,114 @@ const PreCadastro = () => {
             data: parsedData,
             nome_cliente: item.nome_cliente || undefined,
             codigo_ficha: item.codigo_ficha || undefined,
-            tipo: item.tipo || undefined,
+            tipo: item.tipo || undefined
           };
         });
-
         setCards(mappedCards);
       } catch (error) {
         console.error('Erro ao inicializar:', error);
       }
     };
-
     const setupRealtime = async () => {
       try {
         // Importa supabase dinamicamente
-        const { supabase } = await import("@/integrations/supabase/client");
-        
+        const {
+          supabase
+        } = await import("@/integrations/supabase/client");
+
         // Configura realtime para receber updates
-        const channel = supabase
-          .channel('fichas_changes')
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'fichas'
-            },
-            (payload) => {
-              if (!mounted) return;
-              
-              console.log('Realtime update:', payload);
-              
-              if (payload.eventType === 'INSERT') {
-                const newItem = payload.new as any;
-                
-                // Define o status baseado no campo status do banco
-                let mappedStatus: "processing" | "error" = "processing";
-                
-                if (newItem.status === 'erro') {
-                  mappedStatus = 'error';
-                } else {
-                  mappedStatus = 'processing';
-                }
-                
-                // Tenta fazer parse do url_bucket apenas se parecer um JSON
-                let parsedData = null;
-                if (newItem.url_bucket && (newItem.url_bucket.startsWith('{') || newItem.url_bucket.startsWith('['))) {
-                  try {
-                    parsedData = JSON.parse(newItem.url_bucket);
-                  } catch (e) {
-                    console.error('Erro ao parsear url_bucket:', e);
-                  }
-                }
-                
-                const newCard: ProcessingCard = {
-                  id: newItem.id,
-                  timestamp: newItem.created_at,
-                  status: mappedStatus,
-                  phone: newItem.telefone_cliente || undefined,
-                  data: parsedData,
-                  nome_cliente: newItem.nome_cliente || undefined,
-                  codigo_ficha: newItem.codigo_ficha || undefined,
-                  tipo: newItem.tipo || undefined,
-                };
-                setCards((prev) => [newCard, ...prev]);
-              } else if (payload.eventType === 'UPDATE') {
-                const updatedItem = payload.new as any;
-                
-                // Define o status baseado no campo status do banco
-                let mappedStatus: "processing" | "error" = "processing";
-                
-                if (updatedItem.status === 'erro') {
-                  mappedStatus = 'error';
-                } else {
-                  mappedStatus = 'processing';
-                }
-                
-                // Tenta fazer parse do url_bucket apenas se parecer um JSON
-                let parsedData = null;
-                if (updatedItem.url_bucket && (updatedItem.url_bucket.startsWith('{') || updatedItem.url_bucket.startsWith('['))) {
-                  try {
-                    parsedData = JSON.parse(updatedItem.url_bucket);
-                  } catch (e) {
-                    console.error('Erro ao parsear url_bucket:', e);
-                  }
-                }
-                
-                setCards((prev) =>
-                  prev.map((card) =>
-                    card.id === updatedItem.id
-                      ? {
-                          ...card,
-                          status: mappedStatus,
-                          phone: updatedItem.telefone_cliente || undefined,
-                          data: parsedData,
-                          nome_cliente: updatedItem.nome_cliente || undefined,
-                          codigo_ficha: updatedItem.codigo_ficha || undefined,
-                          tipo: updatedItem.tipo || undefined,
-                        }
-                      : card
-                  )
-                );
-              } else if (payload.eventType === 'DELETE') {
-                const deletedItem = payload.old as any;
-                setCards((prev) => prev.filter((card) => card.id !== deletedItem.id));
+        const channel = supabase.channel('fichas_changes').on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'fichas'
+        }, payload => {
+          if (!mounted) return;
+          console.log('Realtime update:', payload);
+          if (payload.eventType === 'INSERT') {
+            const newItem = payload.new as any;
+
+            // Define o status baseado no campo status do banco
+            let mappedStatus: "processing" | "error" = "processing";
+            if (newItem.status === 'erro') {
+              mappedStatus = 'error';
+            } else {
+              mappedStatus = 'processing';
+            }
+
+            // Tenta fazer parse do url_bucket apenas se parecer um JSON
+            let parsedData = null;
+            if (newItem.url_bucket && (newItem.url_bucket.startsWith('{') || newItem.url_bucket.startsWith('['))) {
+              try {
+                parsedData = JSON.parse(newItem.url_bucket);
+              } catch (e) {
+                console.error('Erro ao parsear url_bucket:', e);
               }
             }
-          )
-          .subscribe();
+            const newCard: ProcessingCard = {
+              id: newItem.id,
+              timestamp: newItem.created_at,
+              status: mappedStatus,
+              phone: newItem.telefone_cliente || undefined,
+              data: parsedData,
+              nome_cliente: newItem.nome_cliente || undefined,
+              codigo_ficha: newItem.codigo_ficha || undefined,
+              tipo: newItem.tipo || undefined
+            };
+            setCards(prev => [newCard, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedItem = payload.new as any;
 
+            // Define o status baseado no campo status do banco
+            let mappedStatus: "processing" | "error" = "processing";
+            if (updatedItem.status === 'erro') {
+              mappedStatus = 'error';
+            } else {
+              mappedStatus = 'processing';
+            }
+
+            // Tenta fazer parse do url_bucket apenas se parecer um JSON
+            let parsedData = null;
+            if (updatedItem.url_bucket && (updatedItem.url_bucket.startsWith('{') || updatedItem.url_bucket.startsWith('['))) {
+              try {
+                parsedData = JSON.parse(updatedItem.url_bucket);
+              } catch (e) {
+                console.error('Erro ao parsear url_bucket:', e);
+              }
+            }
+            setCards(prev => prev.map(card => card.id === updatedItem.id ? {
+              ...card,
+              status: mappedStatus,
+              phone: updatedItem.telefone_cliente || undefined,
+              data: parsedData,
+              nome_cliente: updatedItem.nome_cliente || undefined,
+              codigo_ficha: updatedItem.codigo_ficha || undefined,
+              tipo: updatedItem.tipo || undefined
+            } : card));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedItem = payload.old as any;
+            setCards(prev => prev.filter(card => card.id !== deletedItem.id));
+          }
+        }).subscribe();
         return channel;
       } catch (error) {
         console.error('Erro ao configurar realtime:', error);
         return null;
       }
     };
-
     fetchPreCadastros();
     let channelPromise = setupRealtime();
-
     return () => {
       mounted = false;
-      channelPromise.then(async (channel) => {
+      channelPromise.then(async channel => {
         if (channel) {
-          const { supabase } = await import("@/integrations/supabase/client");
+          const {
+            supabase
+          } = await import("@/integrations/supabase/client");
           supabase.removeChannel(channel);
         }
       });
     };
   }, []);
-
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleString("pt-BR", {
@@ -248,105 +215,95 @@ const PreCadastro = () => {
       month: "2-digit",
       year: "numeric",
       hour: "2-digit",
-      minute: "2-digit",
+      minute: "2-digit"
     });
   };
-
   const handleCardClick = async (card: ProcessingCard) => {
     setIsLoadingEditCard(true);
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
-      
+      const {
+        supabase
+      } = await import("@/integrations/supabase/client");
+
       // Busca a ficha completa do banco
-      const { data: fichaCompleta, error } = await supabase
-        .from('fichas')
-        .select('*')
-        .eq('id', card.id)
-        .single();
-      
+      const {
+        data: fichaCompleta,
+        error
+      } = await supabase.from('fichas').select('*').eq('id', card.id).single();
       if (error) {
         console.error('Erro ao buscar ficha:', error);
         toast({
           title: "Erro",
           description: "Não foi possível carregar os dados da ficha.",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
-      
       setEditingCard(fichaCompleta);
     } catch (error) {
       console.error('Erro ao carregar ficha:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar dados da ficha.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsLoadingEditCard(false);
     }
   };
-
   const handleDeleteClick = (e: React.MouseEvent, cardId: string) => {
     e.stopPropagation(); // Evita abrir o modal de edição
     setDeletingCardId(cardId);
   };
-
   const handleConfirmDelete = async () => {
     if (!deletingCardId) return;
-
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
-      
-      const { error } = await supabase
-        .from('fichas')
-        .delete()
-        .eq('id', deletingCardId);
-
+      const {
+        supabase
+      } = await import("@/integrations/supabase/client");
+      const {
+        error
+      } = await supabase.from('fichas').delete().eq('id', deletingCardId);
       if (error) throw error;
-
       toast({
         title: "Sucesso",
-        description: "Ficha excluída com sucesso!",
+        description: "Ficha excluída com sucesso!"
       });
-
-      setCards((prev) => prev.filter((card) => card.id !== deletingCardId));
+      setCards(prev => prev.filter(card => card.id !== deletingCardId));
     } catch (error) {
       console.error('Erro ao deletar ficha:', error);
       toast({
         title: "Erro",
         description: "Não foi possível excluir a ficha.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setDeletingCardId(null);
     }
   };
-
   const handleEditSuccess = async () => {
     // Recarrega os dados após edição
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
-      
-      const { data, error } = await supabase
-        .from('fichas')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      const {
+        supabase
+      } = await import("@/integrations/supabase/client");
+      const {
+        data,
+        error
+      } = await supabase.from('fichas').select('*').order('created_at', {
+        ascending: false
+      });
       if (error) {
         console.error('Erro ao buscar pré-cadastros:', error);
         return;
       }
-
-      const mappedCards: ProcessingCard[] = data.map((item) => {
+      const mappedCards: ProcessingCard[] = data.map(item => {
         let mappedStatus: "processing" | "error" = "processing";
-        
         if (item.status === 'erro') {
           mappedStatus = 'error';
         } else {
           mappedStatus = 'processing';
         }
-        
         let parsedData = null;
         if (item.url_bucket && (item.url_bucket.startsWith('{') || item.url_bucket.startsWith('['))) {
           try {
@@ -355,7 +312,6 @@ const PreCadastro = () => {
             console.error('Erro ao parsear url_bucket:', e);
           }
         }
-        
         return {
           id: item.id,
           timestamp: item.created_at,
@@ -364,73 +320,52 @@ const PreCadastro = () => {
           data: parsedData,
           nome_cliente: item.nome_cliente || undefined,
           codigo_ficha: item.codigo_ficha || undefined,
-          tipo: item.tipo || undefined,
+          tipo: item.tipo || undefined
         };
       });
-
       setCards(mappedCards);
     } catch (error) {
       console.error('Erro ao recarregar dados:', error);
     }
   };
-
-  const filteredCards = cards.filter((card) => {
+  const filteredCards = cards.filter(card => {
     if (activeFilter === "todos") return true;
     if (activeFilter === "pendente") return card.status === "processing";
     if (activeFilter === "erro") return card.status === "error";
     return true;
   });
-
   const getStatusCount = (status: string) => {
     if (status === "todos") return cards.length;
     if (status === "pendente") return cards.filter(c => c.status === "processing").length;
     if (status === "erro") return cards.filter(c => c.status === "error").length;
     return 0;
   };
-
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
+  return <div className="min-h-screen bg-background flex flex-col">
       <Header title="Fichas" />
       
       <main className="flex-1 p-4 pb-20">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold">Fichas</h1>
-            <p className="text-sm text-muted-foreground">
-              Aguardando processamento das imagens
-            </p>
+            
+            
           </div>
 
           <Tabs value={activeFilter} onValueChange={setActiveFilter} className="mb-6">
             <TabsList className="grid w-full grid-cols-3 gap-2 h-auto p-2 bg-muted/50">
-              <TabsTrigger 
-                value="todos"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-2 data-[state=active]:border-primary/50 py-2 text-xs"
-              >
+              <TabsTrigger value="todos" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-2 data-[state=active]:border-primary/50 py-2 text-xs">
                 Todos ({getStatusCount("todos")})
               </TabsTrigger>
-              <TabsTrigger 
-                value="pendente"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-2 data-[state=active]:border-primary/50 py-2 text-xs"
-              >
+              <TabsTrigger value="pendente" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-2 data-[state=active]:border-primary/50 py-2 text-xs">
                 Pendente ({getStatusCount("pendente")})
               </TabsTrigger>
-              <TabsTrigger 
-                value="erro"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-2 data-[state=active]:border-primary/50 py-2 text-xs"
-              >
+              <TabsTrigger value="erro" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:border-2 data-[state=active]:border-primary/50 py-2 text-xs">
                 Erro ({getStatusCount("erro")})
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
           <div className="space-y-3">
-            {filteredCards.map((card) => (
-              <Card
-                key={card.id}
-                className="transition-all hover:shadow-md cursor-pointer"
-                onClick={() => handleCardClick(card)}
-              >
+            {filteredCards.map(card => <Card key={card.id} className="transition-all hover:shadow-md cursor-pointer" onClick={() => handleCardClick(card)}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 space-y-1 min-w-0">
@@ -444,10 +379,10 @@ const PreCadastro = () => {
                       
                       <p className="text-xs text-muted-foreground">
                         Data: {card.timestamp ? new Date(card.timestamp).toLocaleDateString("pt-BR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric"
-                        }) : "-"}
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric"
+                    }) : "-"}
                       </p>
 
                       <p className={`text-xs ${getStatusColor(card.status)}`}>
@@ -459,44 +394,28 @@ const PreCadastro = () => {
                       <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${getTipoColor(card.tipo)}`}>
                         {card.tipo || "-"}
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={(e) => handleDeleteClick(e, card.id)}
-                      >
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={e => handleDeleteClick(e, card.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
 
-          {filteredCards.length === 0 && (
-            <Card className="py-12">
+          {filteredCards.length === 0 && <Card className="py-12">
               <CardContent className="text-center">
                 <p className="text-muted-foreground">
-                  {cards.length === 0 
-                    ? "Nenhuma ficha encontrada" 
-                    : `Nenhuma ficha ${activeFilter === "todos" ? "" : activeFilter}`}
+                  {cards.length === 0 ? "Nenhuma ficha encontrada" : `Nenhuma ficha ${activeFilter === "todos" ? "" : activeFilter}`}
                 </p>
               </CardContent>
-            </Card>
-          )}
+            </Card>}
         </div>
       </main>
 
-      <EditFichaModal
-        open={!!editingCard}
-        onOpenChange={(open) => !open && setEditingCard(null)}
-        ficha={editingCard}
-        isLoading={isLoadingEditCard}
-        onSuccess={handleEditSuccess}
-      />
+      <EditFichaModal open={!!editingCard} onOpenChange={open => !open && setEditingCard(null)} ficha={editingCard} isLoading={isLoadingEditCard} onSuccess={handleEditSuccess} />
 
-      <AlertDialog open={!!deletingCardId} onOpenChange={(open) => !open && setDeletingCardId(null)}>
+      <AlertDialog open={!!deletingCardId} onOpenChange={open => !open && setDeletingCardId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
@@ -514,8 +433,6 @@ const PreCadastro = () => {
       </AlertDialog>
 
       <BottomNav />
-    </div>
-  );
+    </div>;
 };
-
 export default PreCadastro;

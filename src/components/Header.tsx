@@ -3,53 +3,39 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 interface HeaderProps {
   title: string;
 }
-
-const Header = ({ title }: HeaderProps) => {
-  const { user, signOut } = useAuth();
+const Header = ({
+  title
+}: HeaderProps) => {
+  const {
+    user,
+    signOut
+  } = useAuth();
   const [nomeUsuario, setNomeUsuario] = useState<string>('Vendedor');
-
   useEffect(() => {
     if (user) {
-      supabase
-        .from('profiles')
-        .select('nome')
-        .eq('id', user.id)
-        .single()
-        .then(({ data }) => {
-          if (data?.nome) {
-            setNomeUsuario(data.nome);
-          }
-        });
+      supabase.from('profiles').select('nome').eq('id', user.id).single().then(({
+        data
+      }) => {
+        if (data?.nome) {
+          setNomeUsuario(data.nome);
+        }
+      });
     }
   }, [user]);
-
-  return (
-    <header className="bg-card border-b border-border sticky top-0 z-50">
+  return <header className="bg-card border-b border-border sticky top-0 z-50">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Camera className="w-5 h-5 text-primary" />
-          </div>
+          
           <h1 className="text-lg font-semibold text-foreground">{title}</h1>
         </div>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-10 h-10 rounded-full"
-            >
+            <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full">
               <User className="w-5 h-5" />
             </Button>
           </DropdownMenuTrigger>
@@ -67,8 +53,6 @@ const Header = ({ title }: HeaderProps) => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </header>
-  );
+    </header>;
 };
-
 export default Header;
