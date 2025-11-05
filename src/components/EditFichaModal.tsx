@@ -30,6 +30,8 @@ interface EditFichaModalProps {
 export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, onSuccess }: EditFichaModalProps) {
   const [loading, setLoading] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     nome_cliente: "",
     telefone_cliente: "",
@@ -304,6 +306,27 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
     }
   };
 
+  // Handlers para debug e controle da imagem
+  const handleImageLoad = () => {
+    console.log('✅ Imagem carregada com sucesso:', ficha?.url_bucket);
+    setImageLoading(false);
+    setImageError(null);
+  };
+
+  const handleImageError = () => {
+    console.error('❌ Erro ao carregar imagem:', ficha?.url_bucket);
+    setImageError('Não foi possível carregar a imagem. Verifique se a URL está correta.');
+    setImageLoading(false);
+  };
+
+  // Reset estados quando abrir o modal de imagem
+  const handleOpenImageModal = () => {
+    console.log('🔍 Tentando carregar imagem:', ficha?.url_bucket);
+    setImageLoading(true);
+    setImageError(null);
+    setShowImageModal(true);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -331,7 +354,7 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
           <div className="px-6 pt-4">
             <Button
               type="button"
-              onClick={() => setShowImageModal(true)}
+              onClick={handleOpenImageModal}
               className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90"
             >
               <ImageIcon className="h-4 w-4" />
@@ -653,11 +676,42 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
         
         <div className="relative w-full h-full px-6 pb-6 overflow-auto">
           {ficha?.url_bucket ? (
-            <img 
-              src={ficha.url_bucket} 
-              alt="Ficha original" 
-              className="w-full h-auto rounded-lg shadow-lg"
-            />
+            <div className="relative">
+              {/* Loading spinner */}
+              {imageLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted/50 rounded-lg">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="ml-2 text-sm text-muted-foreground">Carregando imagem...</p>
+                </div>
+              )}
+              
+              {/* Mensagem de erro */}
+              {imageError && (
+                <div className="flex flex-col items-center justify-center h-64 bg-destructive/10 rounded-lg border border-destructive/20">
+                  <p className="text-destructive font-medium mb-2">{imageError}</p>
+                  <p className="text-sm text-muted-foreground mb-4">URL: {ficha.url_bucket}</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open(ficha.url_bucket, '_blank')}
+                  >
+                    Tentar abrir em nova aba
+                  </Button>
+                </div>
+              )}
+              
+              {/* Imagem */}
+              {!imageError && (
+                <img 
+                  src={ficha.url_bucket} 
+                  alt="Ficha original" 
+                  className="w-full h-auto rounded-lg shadow-lg"
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                  style={{ display: imageLoading ? 'none' : 'block' }}
+                />
+              )}
+            </div>
           ) : (
             <div className="flex items-center justify-center h-64 bg-muted rounded-lg">
               <p className="text-muted-foreground">Imagem não disponível</p>
