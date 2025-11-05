@@ -118,7 +118,7 @@ const NewRegistration = () => {
         // Modal abre SEMPRE que a ficha foi criada
         setCurrentFichaId(data.ficha_id);
         setIsLoadingFicha(true);
-        setFichaData({ id: data.ficha_id, status: 'processando' });
+        setFichaData({ id: data.ficha_id, status: 'pendente' });
         setShowEditModal(true);
         
         // Inicia polling independente do success
