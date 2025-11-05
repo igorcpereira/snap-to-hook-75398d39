@@ -32,12 +32,14 @@ const NewRegistration = () => {
     // Importa supabase dinamicamente
     const { supabase } = await import("@/integrations/supabase/client");
     
-    // Insere o registro no banco com status 'processing'
+    // Insere o registro no banco com status 'pendente'
     const { data: preCadastro, error: insertError } = await supabase
-      .from('pre_cadastros')
+      .from('fichas')
       .insert({
-        timestamp,
-        status: 'processing',
+        created_at: timestamp,
+        status: 'pendente',
+        telefone_cliente: '',
+        nome_cliente: ''
       })
       .select()
       .single();
@@ -100,13 +102,16 @@ const NewRegistration = () => {
       // Atualiza o registro no banco com o resultado
       const phone = result?.fields?.Cabecalho?.telefone || 
                     result?.[0]?.fields?.Cabecalho?.telefone || null;
+      const nome = result?.fields?.Cabecalho?.nome || 
+                   result?.[0]?.fields?.Cabecalho?.nome || '';
       
       const { error: updateError } = await supabase
-        .from('pre_cadastros')
+        .from('fichas')
         .update({
-          status: 'completed',
-          phone,
-          webhook_data: result,
+          status: 'processado',
+          telefone_cliente: phone,
+          nome_cliente: nome,
+          url_bucket: JSON.stringify(result),
         })
         .eq('id', preCadastro.id);
 

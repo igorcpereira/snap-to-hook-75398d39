@@ -31,8 +31,9 @@ const PreCadastro = () => {
         const { supabase } = await import("@/integrations/supabase/client");
         
         const { data, error } = await supabase
-          .from('pre_cadastros')
+          .from('fichas')
           .select('*')
+          .in('status', ['pendente', 'processado', 'erro'])
           .order('created_at', { ascending: false });
 
         if (error) {
@@ -44,10 +45,10 @@ const PreCadastro = () => {
 
         const mappedCards: ProcessingCard[] = data.map((item) => ({
           id: item.id,
-          timestamp: item.timestamp,
-          status: item.status as "processing" | "completed" | "error",
-          phone: item.phone || undefined,
-          data: item.webhook_data,
+          timestamp: item.created_at,
+          status: item.status === 'pendente' ? 'processing' : (item.status === 'processado' ? 'completed' : 'error'),
+          phone: item.telefone_cliente || undefined,
+          data: item.url_bucket ? JSON.parse(item.url_bucket) : null,
         }));
 
         setCards(mappedCards);
@@ -63,13 +64,14 @@ const PreCadastro = () => {
         
         // Configura realtime para receber updates
         const channel = supabase
-          .channel('pre_cadastros_changes')
+          .channel('fichas_changes')
           .on(
             'postgres_changes',
             {
               event: '*',
               schema: 'public',
-              table: 'pre_cadastros'
+              table: 'fichas',
+              filter: 'status=in.(pendente,processado,erro)'
             },
             (payload) => {
               if (!mounted) return;
@@ -80,10 +82,10 @@ const PreCadastro = () => {
                 const newItem = payload.new as any;
                 const newCard: ProcessingCard = {
                   id: newItem.id,
-                  timestamp: newItem.timestamp,
-                  status: newItem.status,
-                  phone: newItem.phone || undefined,
-                  data: newItem.webhook_data,
+                  timestamp: newItem.created_at,
+                  status: newItem.status === 'pendente' ? 'processing' : (newItem.status === 'processado' ? 'completed' : 'error'),
+                  phone: newItem.telefone_cliente || undefined,
+                  data: newItem.url_bucket ? JSON.parse(newItem.url_bucket) : null,
                 };
                 setCards((prev) => [newCard, ...prev]);
               } else if (payload.eventType === 'UPDATE') {
@@ -93,9 +95,9 @@ const PreCadastro = () => {
                     card.id === updatedItem.id
                       ? {
                           ...card,
-                          status: updatedItem.status,
-                          phone: updatedItem.phone || undefined,
-                          data: updatedItem.webhook_data,
+                          status: updatedItem.status === 'pendente' ? 'processing' : (updatedItem.status === 'processado' ? 'completed' : 'error'),
+                          phone: updatedItem.telefone_cliente || undefined,
+                          data: updatedItem.url_bucket ? JSON.parse(updatedItem.url_bucket) : null,
                         }
                       : card
                   )
