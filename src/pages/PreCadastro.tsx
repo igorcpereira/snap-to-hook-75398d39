@@ -17,7 +17,7 @@ import logoJRP from "@/assets/logo-jrp.png";
 interface ProcessingCard {
   id: string;
   timestamp: string;
-  status: "processing" | "error";
+  status: string; // Mudado para aceitar qualquer status do banco
   phone?: string;
   data?: any;
   nome_cliente?: string;
@@ -45,14 +45,18 @@ const PreCadastro = () => {
       return "bg-primary/10 text-primary border border-primary/20";
     }
   };
-  const getStatusText = (status: "processing" | "error") => {
-    if (status === "processing") return "Pendente";
-    if (status === "error") return "Erro";
-    return "-";
+  const getStatusText = (status: string) => {
+    if (status === "pendente") return "Pendente";
+    if (status === "erro") return "Erro";
+    if (status === "ativa") return "Ativa";
+    if (status === "concluida") return "Concluída";
+    return status; // Retorna o status como está se não for reconhecido
   };
-  const getStatusColor = (status: "processing" | "error") => {
-    if (status === "processing") return "text-yellow-600 font-semibold";
-    if (status === "error") return "text-red-600 font-semibold";
+  const getStatusColor = (status: string) => {
+    if (status === "pendente") return "text-yellow-600 font-semibold";
+    if (status === "erro") return "text-red-600 font-semibold";
+    if (status === "ativa") return "text-green-600 font-semibold";
+    if (status === "concluida") return "text-blue-600 font-semibold";
     return "text-muted-foreground";
   };
   useEffect(() => {
@@ -78,14 +82,6 @@ const PreCadastro = () => {
         }
         if (!mounted) return;
         const mappedCards: ProcessingCard[] = data.map(item => {
-          // Define o status baseado no campo status do banco
-          let mappedStatus: "processing" | "error" = "processing";
-          if (item.status === 'erro') {
-            mappedStatus = 'error';
-          } else {
-            mappedStatus = 'processing';
-          }
-
           // Tenta fazer parse do url_bucket apenas se parecer um JSON
           let parsedData = null;
           if (item.url_bucket && (item.url_bucket.startsWith('{') || item.url_bucket.startsWith('['))) {
@@ -98,7 +94,7 @@ const PreCadastro = () => {
           return {
             id: item.id,
             timestamp: item.created_at,
-            status: mappedStatus,
+            status: item.status, // Usa o status diretamente do banco
             phone: item.telefone_cliente || undefined,
             data: parsedData,
             nome_cliente: item.nome_cliente || undefined,
@@ -131,14 +127,6 @@ const PreCadastro = () => {
           if (payload.eventType === 'INSERT') {
             const newItem = payload.new as any;
 
-            // Define o status baseado no campo status do banco
-            let mappedStatus: "processing" | "error" = "processing";
-            if (newItem.status === 'erro') {
-              mappedStatus = 'error';
-            } else {
-              mappedStatus = 'processing';
-            }
-
             // Tenta fazer parse do url_bucket apenas se parecer um JSON
             let parsedData = null;
             if (newItem.url_bucket && (newItem.url_bucket.startsWith('{') || newItem.url_bucket.startsWith('['))) {
@@ -151,7 +139,7 @@ const PreCadastro = () => {
             const newCard: ProcessingCard = {
               id: newItem.id,
               timestamp: newItem.created_at,
-              status: mappedStatus,
+              status: newItem.status, // Usa o status diretamente do banco
               phone: newItem.telefone_cliente || undefined,
               data: parsedData,
               nome_cliente: newItem.nome_cliente || undefined,
@@ -161,14 +149,6 @@ const PreCadastro = () => {
             setCards(prev => [newCard, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
             const updatedItem = payload.new as any;
-
-            // Define o status baseado no campo status do banco
-            let mappedStatus: "processing" | "error" = "processing";
-            if (updatedItem.status === 'erro') {
-              mappedStatus = 'error';
-            } else {
-              mappedStatus = 'processing';
-            }
 
             // Tenta fazer parse do url_bucket apenas se parecer um JSON
             let parsedData = null;
@@ -181,7 +161,7 @@ const PreCadastro = () => {
             }
             setCards(prev => prev.map(card => card.id === updatedItem.id ? {
               ...card,
-              status: mappedStatus,
+              status: updatedItem.status, // Usa o status diretamente do banco
               phone: updatedItem.telefone_cliente || undefined,
               data: parsedData,
               nome_cliente: updatedItem.nome_cliente || undefined,
@@ -303,12 +283,6 @@ const PreCadastro = () => {
         return;
       }
       const mappedCards: ProcessingCard[] = data.map(item => {
-        let mappedStatus: "processing" | "error" = "processing";
-        if (item.status === 'erro') {
-          mappedStatus = 'error';
-        } else {
-          mappedStatus = 'processing';
-        }
         let parsedData = null;
         if (item.url_bucket && (item.url_bucket.startsWith('{') || item.url_bucket.startsWith('['))) {
           try {
@@ -320,7 +294,7 @@ const PreCadastro = () => {
         return {
           id: item.id,
           timestamp: item.created_at,
-          status: mappedStatus,
+          status: item.status, // Usa o status diretamente do banco
           phone: item.telefone_cliente || undefined,
           data: parsedData,
           nome_cliente: item.nome_cliente || undefined,
@@ -336,8 +310,8 @@ const PreCadastro = () => {
   const filteredCards = cards.filter(card => {
     // Filtro de status
     let statusMatch = true;
-    if (activeFilter === "pendente") statusMatch = card.status === "processing";
-    if (activeFilter === "erro") statusMatch = card.status === "error";
+    if (activeFilter === "pendente") statusMatch = card.status === "pendente";
+    if (activeFilter === "erro") statusMatch = card.status === "erro";
     
     // Filtro de texto (busca em nome_cliente e codigo_ficha)
     let textMatch = true;
@@ -352,8 +326,8 @@ const PreCadastro = () => {
   });
   const getStatusCount = (status: string) => {
     if (status === "todos") return cards.length;
-    if (status === "pendente") return cards.filter(c => c.status === "processing").length;
-    if (status === "erro") return cards.filter(c => c.status === "error").length;
+    if (status === "pendente") return cards.filter(c => c.status === "pendente").length;
+    if (status === "erro") return cards.filter(c => c.status === "erro").length;
     return 0;
   };
   return <div className="min-h-screen bg-background flex flex-col relative">
