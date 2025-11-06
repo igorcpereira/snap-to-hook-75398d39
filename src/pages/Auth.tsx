@@ -65,7 +65,7 @@ const Auth = () => {
         </div>
         
         <h1 className="text-2xl font-bold text-center mb-2">
-          {isLogin ? 'Bem-vindo' : 'Criar Conta'}
+          Flávio Pamplona Alfaiataria
         </h1>
         
 
