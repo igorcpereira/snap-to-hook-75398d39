@@ -9,6 +9,7 @@ import NewRegistration from "./pages/NewRegistration";
 import PreCadastro from "./pages/PreCadastro";
 import Clients from "./pages/Clients";
 import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -48,6 +49,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Clients />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/perfil"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />

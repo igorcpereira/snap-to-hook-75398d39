@@ -76,6 +76,7 @@ export type Database = {
           data_festa: string | null
           data_retirada: string | null
           descricao_cliente: string | null
+          enviada_whatsapp: boolean
           garantia: number | null
           id: string
           nome_cliente: string | null
@@ -104,6 +105,7 @@ export type Database = {
           data_festa?: string | null
           data_retirada?: string | null
           descricao_cliente?: string | null
+          enviada_whatsapp?: boolean
           garantia?: number | null
           id?: string
           nome_cliente?: string | null
@@ -132,6 +134,7 @@ export type Database = {
           data_festa?: string | null
           data_retirada?: string | null
           descricao_cliente?: string | null
+          enviada_whatsapp?: boolean
           garantia?: number | null
           id?: string
           nome_cliente?: string | null
@@ -260,6 +263,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           id: string
           nome: string | null
@@ -267,6 +271,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           id: string
           nome?: string | null
@@ -274,6 +279,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           id?: string
           nome?: string | null
