@@ -423,6 +423,23 @@ export default function EditarFicha() {
           </div>
 
           <div className="space-y-6">
+            {/* Observações do Cliente */}
+            <div className="space-y-4">
+              <h3 className="text-base font-semibold">Observações do Cliente</h3>
+              <AudioRecorder
+                onTranscriptionComplete={handleTranscription}
+                onTagsExtracted={handleTagsExtracted}
+              />
+              <Textarea
+                value={formData.observacoes_cliente}
+                onChange={(e) => setFormData({ ...formData, observacoes_cliente: e.target.value })}
+                placeholder="Observações gerais sobre o atendimento..."
+                className="min-h-[100px]"
+              />
+            </div>
+
+            <Separator />
+
             {/* Cabeçalho */}
             <div className="space-y-4">
               <h3 className="text-base font-semibold">Cabeçalho</h3>
@@ -639,23 +656,6 @@ export default function EditarFicha() {
                   />
                 </div>
               </div>
-            </div>
-
-            <Separator />
-
-            {/* Observações do Cliente */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold">Observações do Cliente</h3>
-              <AudioRecorder
-                onTranscriptionComplete={handleTranscription}
-                onTagsExtracted={handleTagsExtracted}
-              />
-              <Textarea
-                value={formData.observacoes_cliente}
-                onChange={(e) => setFormData({ ...formData, observacoes_cliente: e.target.value })}
-                placeholder="Observações gerais sobre o atendimento..."
-                className="min-h-[100px]"
-              />
             </div>
 
             <Separator />
