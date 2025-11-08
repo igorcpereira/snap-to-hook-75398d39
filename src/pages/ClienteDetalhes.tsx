@@ -45,11 +45,6 @@ export default function ClienteDetalhes() {
 
         if (clienteError) throw clienteError;
         if (!clienteData) {
-          toast({
-            title: "Erro",
-            description: "Cliente não encontrado.",
-            variant: "destructive",
-          });
           navigate("/clientes");
           return;
         }
@@ -71,11 +66,6 @@ export default function ClienteDetalhes() {
         setFichas(fichasData || []);
       } catch (error) {
         console.error("Erro ao carregar dados do cliente:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os dados do cliente.",
-          variant: "destructive",
-        });
       } finally {
         setLoading(false);
       }
@@ -100,11 +90,6 @@ export default function ClienteDetalhes() {
 
       if (error) throw error;
 
-      toast({
-        title: "Sucesso",
-        description: "Dados do cliente atualizados com sucesso!",
-      });
-
       // Recarregar dados do cliente
       const { data: clienteData } = await supabase
         .from('clientes')
@@ -117,11 +102,6 @@ export default function ClienteDetalhes() {
       }
     } catch (error) {
       console.error("Erro ao atualizar cliente:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar os dados do cliente.",
-        variant: "destructive",
-      });
     } finally {
       setSaving(false);
     }

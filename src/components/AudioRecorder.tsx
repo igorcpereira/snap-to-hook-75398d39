@@ -38,11 +38,6 @@ export function AudioRecorder({ onTranscriptionComplete, onTagsExtracted }: Audi
       setIsRecording(true);
     } catch (error) {
       console.error("Erro ao iniciar gravação:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível acessar o microfone.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -75,21 +70,11 @@ export function AudioRecorder({ onTranscriptionComplete, onTagsExtracted }: Audi
           console.log('Tags recebidas do webhook:', data.tags);
           onTagsExtracted?.(data.tags);
         }
-        
-        toast({
-          title: "Sucesso",
-          description: "Áudio transcrito com sucesso!",
-        });
       } else {
         throw new Error("Formato de resposta inválido");
       }
     } catch (error) {
       console.error("Erro ao processar áudio:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível processar o áudio.",
-        variant: "destructive",
-      });
     } finally {
       setIsProcessing(false);
     }

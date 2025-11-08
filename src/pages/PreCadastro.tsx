@@ -215,18 +215,9 @@ const PreCadastro = () => {
         error
       } = await supabase.from('fichas').delete().eq('id', deletingCardId);
       if (error) throw error;
-      toast({
-        title: "Sucesso",
-        description: "Ficha excluída com sucesso!"
-      });
       setCards(prev => prev.filter(card => card.id !== deletingCardId));
     } catch (error) {
       console.error('Erro ao deletar ficha:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir a ficha.",
-        variant: "destructive"
-      });
     } finally {
       setDeletingCardId(null);
     }

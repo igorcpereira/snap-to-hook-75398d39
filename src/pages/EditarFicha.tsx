@@ -75,11 +75,6 @@ export default function EditarFicha() {
 
         if (error) throw error;
         if (!fichaData) {
-          toast({
-            title: "Erro",
-            description: "Ficha não encontrada.",
-            variant: "destructive",
-          });
           navigate("/pre-cadastro");
           return;
         }
@@ -141,11 +136,6 @@ export default function EditarFicha() {
         });
       } catch (error) {
         console.error('Erro ao carregar ficha:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar a ficha.",
-          variant: "destructive",
-        });
         navigate("/pre-cadastro");
       } finally {
         setIsLoadingFicha(false);
@@ -329,21 +319,9 @@ export default function EditarFicha() {
         }
       }
 
-      toast({
-        title: "Sucesso",
-        description: clienteId
-          ? "Ficha atualizada e cliente vinculado!"
-          : "Ficha atualizada com sucesso!",
-      });
-
       navigate("/pre-cadastro");
     } catch (error) {
       console.error("Erro ao atualizar ficha:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar a ficha.",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }
