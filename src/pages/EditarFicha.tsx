@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { ArrowLeft, Image as ImageIcon, X, User } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,9 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function EditarFicha() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+  const { imageFile, isNewFicha, isReprocessing } = location.state || {};
   const { data: vendedores = [], isLoading: isLoadingVendedores } = useVendedores();
   const [loading, setLoading] = useState(false);
   const [isLoadingFicha, setIsLoadingFicha] = useState(true);
@@ -37,6 +39,8 @@ export default function EditarFicha() {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState<string | null>(null);
   const [ficha, setFicha] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [formData, setFormData] = useState({
     nome_cliente: "",
     telefone_cliente: "",
@@ -57,6 +61,15 @@ export default function EditarFicha() {
     observacoes_cliente: "",
     tags: [] as string[],
   });
+
+  // Limpa polling quando componente desmonta
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const loadFicha = async () => {
@@ -80,6 +93,11 @@ export default function EditarFicha() {
         }
 
         setFicha(fichaData);
+
+        // Se está processando e é ficha nova, inicia polling
+        if (fichaData.status === 'pendente' && isNewFicha) {
+          setIsProcessing(true);
+        }
 
         // Buscar tags do cliente se houver cliente_id
         let clienteTags: string[] = [];
@@ -114,7 +132,8 @@ export default function EditarFicha() {
           vendedorNome = profile?.nome || "";
         }
 
-        setFormData({
+        setFormData(prev => ({
+          ...prev,
           nome_cliente: fichaData.nome_cliente || "",
           telefone_cliente: fichaData.telefone_cliente || "",
           codigo_ficha: fichaData.codigo_ficha || "",
@@ -131,9 +150,10 @@ export default function EditarFicha() {
           camisa: fichaData.camisa || "",
           sapato: fichaData.sapato || "",
           pago: fichaData.pago || false,
-          observacoes_cliente: fichaData.transcricao_audio || "",
+          // Preserva observações_cliente se já existir
+          observacoes_cliente: prev.observacoes_cliente || fichaData.transcricao_audio || "",
           tags: clienteTags,
-        });
+        }));
       } catch (error) {
         console.error('Erro ao carregar ficha:', error);
         navigate("/pre-cadastro");
@@ -143,7 +163,37 @@ export default function EditarFicha() {
     };
 
     loadFicha();
-  }, [id, navigate, user?.id]);
+
+    // Polling a cada 2s se estiver processando
+    if (isNewFicha && id) {
+      const interval = setInterval(loadFicha, 2000);
+      pollingIntervalRef.current = interval;
+      return () => clearInterval(interval);
+    }
+  }, [id, navigate, user?.id, isNewFicha]);
+
+  // Detectar quando webhook terminou (status mudou de pendente)
+  useEffect(() => {
+    if (ficha && ficha.status !== 'pendente' && isProcessing) {
+      setIsProcessing(false);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+      
+      if (ficha.status === 'erro') {
+        toast({
+          title: "Erro ao processar",
+          description: "Não foi possível processar a imagem. Você pode preencher manualmente.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Processamento concluído",
+          description: "Campos preenchidos automaticamente. Você pode editá-los antes de salvar.",
+        });
+      }
+    }
+  }, [ficha?.status, isProcessing]);
 
   const handleTranscription = (text: string) => {
     console.log('Texto recebido da transcrição:', text);
@@ -175,6 +225,34 @@ export default function EditarFicha() {
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Validar codigo_ficha único
+      if (!formData.codigo_ficha) {
+        toast({
+          title: "Erro",
+          description: "Código da ficha é obrigatório",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
+      const { data: fichaExistente } = await supabase
+        .from('fichas')
+        .select('id')
+        .eq('codigo_ficha', formData.codigo_ficha)
+        .neq('id', id)
+        .maybeSingle();
+
+      if (fichaExistente) {
+        toast({
+          title: "Erro",
+          description: "Este código de ficha já existe",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
       let clienteId: string | null = null;
 
       if (formData.telefone_cliente && formData.telefone_cliente.trim() !== '') {
@@ -379,13 +457,20 @@ export default function EditarFicha() {
             <h1 className="text-xl font-semibold">Editar Ficha</h1>
           </div>
 
-          {ficha?.status === "pendente" && (
-            <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg flex items-center gap-3">
-              <div className="w-5 h-5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+          {isProcessing && (
+            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center gap-3">
+              <Loader2 className="w-5 h-5 text-blue-600 animate-spin flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Processando imagem</p>
-                <p className="text-xs text-amber-700 dark:text-amber-300">Os campos serão preenchidos automaticamente quando o processamento terminar.</p>
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Processando dados da ficha...</p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">Os campos serão preenchidos automaticamente.</p>
               </div>
+            </div>
+          )}
+
+          {ficha?.status === 'erro' && isNewFicha && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm font-medium text-red-900 dark:text-red-100">Erro ao processar imagem</p>
+              <p className="text-xs text-red-700 dark:text-red-300 mt-1">Você pode preencher os campos manualmente ou reenviar a imagem.</p>
             </div>
           )}
 

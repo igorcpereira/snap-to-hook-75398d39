@@ -118,16 +118,8 @@ Deno.serve(async (req) => {
       // 7. Verifica se o webhook processou com sucesso
       if (webhookData.sucesso === true) {
         // Webhook processou e salvou os dados no banco
-        // Apenas atualiza o status
-        await supabaseClient
-          .from('fichas')
-          .update({
-            status: 'ativa',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', ficha.id)
-
-        console.log('Ficha marcada como processada:', ficha.id)
+        // Status continua 'pendente' - usuário vai editar na página
+        console.log('Webhook processou com sucesso. Status: pendente')
       } else {
         // Webhook retornou erro
         console.error('Webhook retornou erro:', webhookData.erro || 'Erro desconhecido')
