@@ -40,6 +40,7 @@ export default function EditarFicha() {
   const [imageError, setImageError] = useState<string | null>(null);
   const [ficha, setFicha] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [wasProcessed, setWasProcessed] = useState(false);
   const [isAudioRecording, setIsAudioRecording] = useState(false);
   const [isAudioProcessing, setIsAudioProcessing] = useState(false);
   const [formData, setFormData] = useState({
@@ -213,11 +214,12 @@ export default function EditarFicha() {
           
           if (isProcessing && foiProcessado) {
             setIsProcessing(false);
+            setWasProcessed(true);
             
-            toast({
-              title: "Processamento concluído",
-              description: "Campos preenchidos automaticamente. Você pode editá-los antes de salvar.",
-            });
+            // Remove a mensagem de sucesso após 5 segundos
+            setTimeout(() => {
+              setWasProcessed(false);
+            }, 5000);
           }
           
           // Detectar erro apenas se status for explicitamente 'erro'
@@ -518,6 +520,19 @@ export default function EditarFicha() {
               <div className="flex-1">
                 <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Processando dados da ficha...</p>
                 <p className="text-xs text-blue-700 dark:text-blue-300">Os campos serão preenchidos automaticamente.</p>
+              </div>
+            </div>
+          )}
+
+          {wasProcessed && (
+            <div className="mb-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3">
+              <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-green-900 dark:text-green-100">Dados da ficha processados com sucesso</p>
               </div>
             </div>
           )}
