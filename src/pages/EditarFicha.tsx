@@ -22,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useVendedores } from "@/hooks/useVendedores";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -893,6 +893,10 @@ export default function EditarFicha() {
       {/* Modal de Imagem */}
       <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
         <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogTitle className="sr-only">Visualização da Ficha Original</DialogTitle>
+          <DialogDescription className="sr-only">
+            Imagem digitalizada da ficha de atendimento original
+          </DialogDescription>
           <div className="relative w-full h-full flex items-center justify-center">
             {imageLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-background">
