@@ -575,6 +575,8 @@ export default function EditarFicha() {
                 onProcessingEnd={() => setIsAudioProcessing(false)}
               />
               <Textarea
+                id="observacoes_cliente"
+                name="observacoes_cliente"
                 value={formData.observacoes_cliente}
                 onChange={(e) => setFormData({ ...formData, observacoes_cliente: e.target.value })}
                 placeholder="Observações gerais sobre o atendimento..."
@@ -593,6 +595,7 @@ export default function EditarFicha() {
                     <Label htmlFor="nome_cliente">Nome</Label>
                     <Input
                       id="nome_cliente"
+                      name="nome_cliente"
                       value={formData.nome_cliente}
                       onChange={(e) => setFormData({ ...formData, nome_cliente: e.target.value })}
                       placeholder="Nome completo"
@@ -603,6 +606,7 @@ export default function EditarFicha() {
                     <Label htmlFor="telefone_cliente">Telefone</Label>
                     <Input
                       id="telefone_cliente"
+                      name="telefone_cliente"
                       value={formData.telefone_cliente}
                       onChange={(e) => setFormData({ ...formData, telefone_cliente: e.target.value })}
                       placeholder="(00) 00000-0000"
@@ -635,6 +639,7 @@ export default function EditarFicha() {
                     <Label htmlFor="codigo_ficha">Código da Ficha</Label>
                     <Input
                       id="codigo_ficha"
+                      name="codigo_ficha"
                       value={formData.codigo_ficha}
                       onChange={(e) => setFormData({ ...formData, codigo_ficha: e.target.value })}
                       placeholder="Código"
@@ -659,6 +664,7 @@ export default function EditarFicha() {
                     <Label htmlFor="status">Status</Label>
                     <Input
                       id="status"
+                      name="status"
                       value={formData.status === "pendente" ? "Pendente" : formData.status === "ativa" ? "Ativa" : formData.status === "erro" ? "Erro" : formData.status}
                       disabled
                       className="bg-muted"
@@ -764,6 +770,7 @@ export default function EditarFicha() {
                   <Label htmlFor="paleto">Paletó</Label>
                   <Input
                     id="paleto"
+                    name="paleto"
                     value={formData.paleto}
                     onChange={(e) => setFormData({ ...formData, paleto: e.target.value })}
                     placeholder="Número"
@@ -774,6 +781,7 @@ export default function EditarFicha() {
                   <Label htmlFor="calca">Calça</Label>
                   <Input
                     id="calca"
+                    name="calca"
                     value={formData.calca}
                     onChange={(e) => setFormData({ ...formData, calca: e.target.value })}
                     placeholder="Número"
@@ -784,6 +792,7 @@ export default function EditarFicha() {
                   <Label htmlFor="camisa">Camisa</Label>
                   <Input
                     id="camisa"
+                    name="camisa"
                     value={formData.camisa}
                     onChange={(e) => setFormData({ ...formData, camisa: e.target.value })}
                     placeholder="Número"
@@ -794,6 +803,7 @@ export default function EditarFicha() {
                   <Label htmlFor="sapato">Sapato</Label>
                   <Input
                     id="sapato"
+                    name="sapato"
                     value={formData.sapato}
                     onChange={(e) => setFormData({ ...formData, sapato: e.target.value })}
                     placeholder="Número"
@@ -837,6 +847,7 @@ export default function EditarFicha() {
                   <Label htmlFor="valor">Valor (R$)</Label>
                   <Input
                     id="valor"
+                    name="valor"
                     type="number"
                     step="0.01"
                     value={formData.valor}
@@ -849,6 +860,7 @@ export default function EditarFicha() {
                   <Label htmlFor="garantia">Garantia (R$)</Label>
                   <Input
                     id="garantia"
+                    name="garantia"
                     type="number"
                     step="0.01"
                     value={formData.garantia}
