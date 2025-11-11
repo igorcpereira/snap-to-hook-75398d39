@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { EditFichaModal } from "@/components/EditFichaModal";
+
 import logoJRP from "@/assets/logo-jrp.png";
 
 const NewRegistration = () => {
@@ -21,75 +21,7 @@ const NewRegistration = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   
-  // Novo fluxo: controle da ficha e modal
   const [currentFichaId, setCurrentFichaId] = useState<string | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [fichaData, setFichaData] = useState<any>(null);
-  const [isLoadingFicha, setIsLoadingFicha] = useState(false);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Limpa polling quando componente desmonta
-  useEffect(() => {
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Função para iniciar polling da ficha
-  const startPolling = (fichaId: string) => {
-    let pollCount = 0;
-    const maxPolls = 15; // 30 segundos (2s * 15)
-
-    pollingIntervalRef.current = setInterval(async () => {
-      pollCount++;
-
-      if (pollCount >= maxPolls) {
-        // Timeout - parar polling
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-        }
-        toast.error("Tempo limite excedido ao processar ficha");
-        return;
-      }
-
-      // Busca status da ficha
-      const { data: ficha, error } = await supabase
-        .from('fichas')
-        .select('*')
-        .eq('id', fichaId)
-        .single();
-
-      if (error) {
-        console.error('Erro ao buscar ficha:', error);
-        return;
-      }
-
-      console.log('Polling ficha:', ficha.status);
-
-      if (ficha.status === 'ativa') {
-        // Ficha processada com sucesso
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-        }
-        
-        setFichaData(ficha);
-        setIsLoadingFicha(false);
-        toast.success("Ficha processada com sucesso!");
-        
-      } else if (ficha.status === 'erro') {
-        // Erro no processamento
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-        }
-        
-        setShowEditModal(false);
-        setShowErrorDialog(true);
-        setIsLoadingFicha(false);
-      }
-    }, 2000); // Poll a cada 2 segundos
-  };
 
   const sendImageToWebhook = async (file: File) => {
     try {
@@ -116,34 +48,22 @@ const NewRegistration = () => {
       console.log('Edge Function resposta:', data);
 
       if (data.ficha_id) {
-        // Modal abre SEMPRE que a ficha foi criada
-        setCurrentFichaId(data.ficha_id);
-        setIsLoadingFicha(true);
-        setFichaData({ id: data.ficha_id, status: 'pendente' });
-        setShowEditModal(true);
-        
-        // Inicia polling independente do success
-        toast.info("Processando ficha...");
-        startPolling(data.ficha_id);
-        
-        // Log para debug
-        if (!data.success) {
-          console.warn('Ficha criada mas webhook retornou erro. Polling irá verificar status.');
-        }
+        // Navega IMEDIATAMENTE para EditarFicha
+        // O processamento do webhook continua em background
+        toast.success("Ficha criada! Aguardando processamento...");
+        navigate(`/editar-ficha/${data.ficha_id}`, {
+          state: { 
+            imageFile: file,
+            isNewFicha: true 
+          }
+        });
       } else {
-        // Só lança erro se nem a ficha foi criada
         throw new Error(data.error || 'Erro ao criar ficha no banco');
       }
 
     } catch (error: any) {
       console.error('Erro:', error);
-      
-      // Se houver ficha criada, excluir
-      if (currentFichaId) {
-        await supabase.from('fichas').delete().eq('id', currentFichaId);
-      }
-      
-      toast.error("Falha ao enviar a imagem. Tente novamente.");
+      toast.error("Falha ao criar a ficha. Tente novamente.");
       setShowErrorDialog(true);
     } finally {
       setIsUploading(false);
@@ -155,62 +75,14 @@ const NewRegistration = () => {
     
     try {
       setShowErrorDialog(false);
+      toast.info("Reenviando imagem...");
       
-      // Busca a imagem da ficha no storage
-      const { data: ficha } = await supabase
-        .from('fichas')
-        .select('url_bucket')
-        .eq('id', currentFichaId)
-        .single();
-
-      if (!ficha?.url_bucket) {
-        throw new Error('Imagem não encontrada');
-      }
-
-      // Baixa a imagem do storage
-      const { data: imageData } = await supabase.storage
-        .from('fichas')
-        .download(ficha.url_bucket);
-
-      if (!imageData) {
-        throw new Error('Erro ao baixar imagem');
-      }
-
-      // Busca webhook re-ler-image
-      const { data: webhook } = await supabase
-        .from('webhooks')
-        .select('webhook')
-        .eq('nome', 're-ler-image')
-        .single();
-
-      if (!webhook) {
-        throw new Error('Webhook re-ler-image não encontrado');
-      }
-
-      // Atualiza status para pendente
-      await supabase
-        .from('fichas')
-        .update({ status: 'pendente' })
-        .eq('id', currentFichaId);
-
-      // Envia para webhook
-      const formData = new FormData();
-      formData.append('image', imageData);
-      formData.append('ficha_id', currentFichaId);
-
-      await fetch(webhook.webhook, {
-        method: 'POST',
-        body: formData,
+      // Navega para EditarFicha com flag de reprocessamento
+      navigate(`/editar-ficha/${currentFichaId}`, {
+        state: { 
+          isReprocessing: true 
+        }
       });
-      
-      // Abre modal imediatamente com loading
-      setIsLoadingFicha(true);
-      setFichaData({ id: currentFichaId, status: 'processando' });
-      setShowEditModal(true);
-      
-      // Retoma polling
-      toast.info("Processando ficha...");
-      startPolling(currentFichaId);
       
     } catch (error) {
       console.error('Erro ao reenviar imagem:', error);
@@ -227,7 +99,6 @@ const NewRegistration = () => {
     
     setShowErrorDialog(false);
     setCurrentFichaId(null);
-    setFichaData(null);
     setSelectedFile(null);
     
     // Permite nova captura
@@ -352,6 +223,8 @@ const NewRegistration = () => {
           {/* Hidden File Inputs */}
           <input
             ref={cameraInputRef}
+            id="camera-input"
+            name="camera-input"
             type="file"
             accept="image/*"
             capture="environment"
@@ -360,6 +233,8 @@ const NewRegistration = () => {
           />
           <input
             ref={fileInputRef}
+            id="file-input"
+            name="file-input"
             type="file"
             accept="image/*"
             onChange={handleFileSelect}
@@ -440,22 +315,6 @@ const NewRegistration = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <EditFichaModal
-        open={showEditModal}
-        onOpenChange={(open) => {
-          setShowEditModal(open);
-          if (!open && pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-          }
-        }}
-        ficha={fichaData}
-        isLoading={isLoadingFicha}
-        onSuccess={() => {
-          setShowEditModal(false);
-          toast.success("Ficha salva com sucesso!");
-          navigate('/clientes');
-        }}
-      />
 
       <BottomNav />
     </div>

@@ -292,22 +292,10 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
         }
       }
 
-      toast({
-        title: "Sucesso",
-        description: clienteId 
-          ? "Ficha atualizada e cliente vinculado!" 
-          : "Ficha atualizada com sucesso!",
-      });
-
       onSuccess();
       onOpenChange(false);
     } catch (error) {
       console.error("Erro ao atualizar ficha:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar a ficha.",
-        variant: "destructive",
-      });
     } finally {
       setLoading(false);
     }

@@ -163,24 +163,6 @@ export type Database = {
           },
         ]
       }
-      fichas_pre_kadin: {
-        Row: {
-          created_at: string
-          id: number
-          url: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: number
-          url?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: number
-          url?: string | null
-        }
-        Relationships: []
-      }
       fichas_temporarias: {
         Row: {
           calca: string | null
@@ -263,6 +245,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ativo: boolean
           avatar_url: string | null
           created_at: string
           id: string
@@ -272,6 +255,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ativo?: boolean
           avatar_url?: string | null
           created_at?: string
           id: string
@@ -281,6 +265,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ativo?: boolean
           avatar_url?: string | null
           created_at?: string
           id?: string
@@ -337,37 +322,81 @@ export type Database = {
       }
       tags: {
         Row: {
+          ativa: boolean
+          cor: string
           created_at: string
           id: string
           nome: string | null
+          unidade_id: number | null
         }
         Insert: {
+          ativa?: boolean
+          cor?: string
           created_at?: string
           id?: string
           nome?: string | null
+          unidade_id?: number | null
         }
         Update: {
+          ativa?: boolean
+          cor?: string
           created_at?: string
           id?: string
           nome?: string | null
+          unidade_id?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tags_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       unidades: {
         Row: {
+          ativa: boolean
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
           created_at: string
+          endereco: string | null
+          estado: string | null
           id: number
           nome: string | null
+          numero_whatsapp_padrao: string | null
+          telefone: string | null
+          updated_at: string
         }
         Insert: {
+          ativa?: boolean
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
           created_at?: string
+          endereco?: string | null
+          estado?: string | null
           id?: number
           nome?: string | null
+          numero_whatsapp_padrao?: string | null
+          telefone?: string | null
+          updated_at?: string
         }
         Update: {
+          ativa?: boolean
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
           created_at?: string
+          endereco?: string | null
+          estado?: string | null
           id?: number
           nome?: string | null
+          numero_whatsapp_padrao?: string | null
+          telefone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -445,6 +474,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_user_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: undefined
+      }
       can_access_unidade: {
         Args: { _target_unidade_id: number; _user_id: string }
         Returns: boolean
@@ -454,6 +490,21 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_user_unidade: { Args: { _user_id: string }; Returns: number }
+      get_usuarios_completos: {
+        Args: never
+        Returns: {
+          ativo: boolean
+          avatar_url: string
+          created_at: string
+          email: string
+          id: string
+          is_vendedor_adicional: boolean
+          nome: string
+          role: string
+          unidade_id: number
+          unidade_nome: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -461,9 +512,29 @@ export type Database = {
         }
         Returns: boolean
       }
+      remove_user_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      update_user_role: {
+        Args: {
+          _new_role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
-      app_role: "gestor" | "franqueado" | "vendedor"
+      app_role:
+        | "gestor"
+        | "franqueado"
+        | "vendedor"
+        | "master"
+        | "admin"
+        | "suporte"
       status_ficha: "erro" | "pendente" | "ativa" | "baixa"
       tipo_de_atendimento: "Aluguel" | "Venda" | "Ajuste"
       user_role: "Gestor" | "Franqueado" | "Vendedor"
@@ -594,7 +665,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["gestor", "franqueado", "vendedor"],
+      app_role: [
+        "gestor",
+        "franqueado",
+        "vendedor",
+        "master",
+        "admin",
+        "suporte",
+      ],
       status_ficha: ["erro", "pendente", "ativa", "baixa"],
       tipo_de_atendimento: ["Aluguel", "Venda", "Ajuste"],
       user_role: ["Gestor", "Franqueado", "Vendedor"],

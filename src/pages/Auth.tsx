@@ -72,17 +72,17 @@ const Auth = () => {
         <form onSubmit={handleAuth} className="space-y-4">
           {!isLogin && <div className="space-y-2">
               <Label htmlFor="nome">Nome</Label>
-              <Input id="nome" type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Seu nome completo" required />
+              <Input id="nome" name="nome" type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Seu nome completo" required />
             </div>}
 
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required />
+            <Input id="email" name="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
-            <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+            <Input id="password" name="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>
