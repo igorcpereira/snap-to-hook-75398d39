@@ -160,7 +160,7 @@ export default function EditarFicha() {
 
   // Subscrição Realtime para updates da ficha
   useEffect(() => {
-    if (!id || !isNewFicha) return;
+    if (!id) return;
 
     console.log('📡 Iniciando subscrição realtime para ficha:', id);
     
@@ -238,7 +238,7 @@ export default function EditarFicha() {
       console.log('🔌 Desconectando subscrição realtime');
       supabase.removeChannel(channel);
     };
-  }, [id, isNewFicha, isAudioRecording, isAudioProcessing]);
+  }, [id, isAudioRecording, isAudioProcessing]);
 
   const handleTranscription = (text: string) => {
     console.log('Texto recebido da transcrição:', text);
