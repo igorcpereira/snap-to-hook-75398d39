@@ -223,6 +223,8 @@ const NewRegistration = () => {
           {/* Hidden File Inputs */}
           <input
             ref={cameraInputRef}
+            id="camera-input"
+            name="camera-input"
             type="file"
             accept="image/*"
             capture="environment"
@@ -231,6 +233,8 @@ const NewRegistration = () => {
           />
           <input
             ref={fileInputRef}
+            id="file-input"
+            name="file-input"
             type="file"
             accept="image/*"
             onChange={handleFileSelect}

@@ -193,6 +193,7 @@ const Profile = () => {
                   <Camera className="w-5 h-5" />
                   <input
                     id="avatar-upload"
+                    name="avatar-upload"
                     type="file"
                     accept="image/*"
                     className="hidden"
@@ -217,6 +218,7 @@ const Profile = () => {
                 <Label htmlFor="nome">Nome</Label>
                 <Input
                   id="nome"
+                  name="nome"
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   placeholder="Seu nome"
@@ -226,6 +228,7 @@ const Profile = () => {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   value={user?.email || ''}
                   disabled
                   className="bg-muted"
@@ -251,6 +254,7 @@ const Profile = () => {
                 <Label htmlFor="nova-senha">Nova Senha</Label>
                 <Input
                   id="nova-senha"
+                  name="nova-senha"
                   type="password"
                   value={novaSenha}
                   onChange={(e) => setNovaSenha(e.target.value)}
@@ -261,6 +265,7 @@ const Profile = () => {
                 <Label htmlFor="confirmar-senha">Confirmar Senha</Label>
                 <Input
                   id="confirmar-senha"
+                  name="confirmar-senha"
                   type="password"
                   value={confirmarSenha}
                   onChange={(e) => setConfirmarSenha(e.target.value)}
