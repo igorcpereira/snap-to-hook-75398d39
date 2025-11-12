@@ -96,41 +96,44 @@ export function AudioRecorder({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       {!isRecording ? (
-        <Button
-          type="button"
-          variant="destructive"
-          size="default"
-          onClick={startRecording}
-          disabled={isProcessing}
-          className="gap-2"
-        >
-          {isProcessing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <div className="flex items-center gap-2">
-              <div className="relative flex items-center justify-center w-4 h-4 rounded-full bg-white">
-                <div className="w-2 h-2 rounded-full bg-destructive" />
-              </div>
-              <span>Descrever o Cliente</span>
-            </div>
-          )}
-        </Button>
+        <>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={startRecording}
+            disabled={isProcessing}
+            className="gap-1.5 px-3"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <>
+                <div className="w-2 h-2 rounded-full bg-white" />
+                <span className="text-xs font-semibold">REC</span>
+              </>
+            )}
+          </Button>
+          <span className="text-sm font-medium">
+            {isProcessing ? "Processando..." : "Descrever o Cliente"}
+          </span>
+        </>
       ) : (
-        <Button
-          type="button"
-          variant="destructive"
-          size="default"
-          onClick={stopRecording}
-          className="animate-pulse gap-2"
-        >
-          <Square className="h-4 w-4 fill-white" />
-          <span>Gravando...</span>
-        </Button>
-      )}
-      {isProcessing && (
-        <span className="text-xs text-muted-foreground">Processando...</span>
+        <>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={stopRecording}
+            className="animate-pulse gap-1.5 px-3"
+          >
+            <Square className="h-3 w-3 fill-white" />
+            <span className="text-xs font-semibold">REC</span>
+          </Button>
+          <span className="text-sm font-medium">Gravando...</span>
+        </>
       )}
     </div>
   );
