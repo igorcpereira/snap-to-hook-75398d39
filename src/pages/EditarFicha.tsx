@@ -602,6 +602,31 @@ export default function EditarFicha() {
 
             <Separator />
 
+            {/* Tags */}
+            <div className="space-y-4">
+              <h3 className="text-base font-semibold">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {formData.tags.length > 0 ? (
+                  formData.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">-</span>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Cabeçalho */}
             <div className="space-y-4">
               <h3 className="text-base font-semibold">Cabeçalho</h3>
@@ -828,32 +853,6 @@ export default function EditarFicha() {
               </div>
             </div>
 
-            <Separator />
-
-            {/* Tags */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold">Tags do Cliente</h3>
-              <div className="flex flex-wrap gap-2">
-                {formData.tags.length > 0 ? (
-                  formData.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nenhuma tag adicionada ainda.</p>
-                )}
-              </div>
-            </div>
-
-            <Separator />
 
             {/* Pagamento */}
             <div className="space-y-4">
@@ -908,10 +907,11 @@ export default function EditarFicha() {
               <Button
                 onClick={handleSave}
                 disabled={loading}
+                variant="success"
                 className="flex-1"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar
+                Lançar Pedido
               </Button>
             </div>
           </div>

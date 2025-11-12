@@ -100,31 +100,38 @@ export function AudioRecorder({
       {!isRecording ? (
         <Button
           type="button"
-          variant="outline"
-          size="icon"
+          variant="destructive"
+          size="default"
           onClick={startRecording}
           disabled={isProcessing}
+          className="gap-2"
         >
           {isProcessing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Mic className="h-4 w-4" />
+            <div className="flex items-center gap-2">
+              <div className="relative flex items-center justify-center w-4 h-4 rounded-full bg-white">
+                <div className="w-2 h-2 rounded-full bg-destructive" />
+              </div>
+              <span>Descrever o Cliente</span>
+            </div>
           )}
         </Button>
       ) : (
         <Button
           type="button"
           variant="destructive"
-          size="icon"
+          size="default"
           onClick={stopRecording}
-          className="animate-pulse"
+          className="animate-pulse gap-2"
         >
-          <Square className="h-4 w-4" />
+          <Square className="h-4 w-4 fill-white" />
+          <span>Gravando...</span>
         </Button>
       )}
-      <span className="text-xs text-muted-foreground">
-        {isRecording ? "Gravando..." : isProcessing ? "Processando..." : "Gravar áudio"}
-      </span>
+      {isProcessing && (
+        <span className="text-xs text-muted-foreground">Processando...</span>
+      )}
     </div>
   );
 }
