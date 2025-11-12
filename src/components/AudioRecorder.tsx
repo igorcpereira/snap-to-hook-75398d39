@@ -96,35 +96,45 @@ export function AudioRecorder({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       {!isRecording ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={startRecording}
-          disabled={isProcessing}
-        >
-          {isProcessing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Mic className="h-4 w-4" />
-          )}
-        </Button>
+        <>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={startRecording}
+            disabled={isProcessing}
+            className="gap-1.5 px-3"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <>
+                <div className="w-2 h-2 rounded-full bg-white" />
+                <span className="text-xs font-semibold">REC</span>
+              </>
+            )}
+          </Button>
+          <span className="text-sm font-medium">
+            {isProcessing ? "Processando..." : "Descrever o Cliente"}
+          </span>
+        </>
       ) : (
-        <Button
-          type="button"
-          variant="destructive"
-          size="icon"
-          onClick={stopRecording}
-          className="animate-pulse"
-        >
-          <Square className="h-4 w-4" />
-        </Button>
+        <>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={stopRecording}
+            className="animate-pulse gap-1.5 px-3"
+          >
+            <Square className="h-3 w-3 fill-white" />
+            <span className="text-xs font-semibold">REC</span>
+          </Button>
+          <span className="text-sm font-medium">Gravando...</span>
+        </>
       )}
-      <span className="text-xs text-muted-foreground">
-        {isRecording ? "Gravando..." : isProcessing ? "Processando..." : "Gravar áudio"}
-      </span>
     </div>
   );
 }

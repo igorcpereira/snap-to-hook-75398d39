@@ -51,6 +51,9 @@ h1, h2, h3, h4, h5, h6 {
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
     --border: 200 10% 85%;
     --input: 200 10% 85%;
     --ring: var(--tailoring-navy);
@@ -94,6 +97,9 @@ h1, h2, h3, h4, h5, h6 {
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 20% 95%;
+
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
 
     --border: 200 15% 18%;
     --input: 200 15% 18%;
