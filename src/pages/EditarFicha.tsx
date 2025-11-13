@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, Image as ImageIcon, X, User } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, X, User, Mic, FileText, Calendar as CalendarIcon2, Shirt, DollarSign, Save, Tag } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -20,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { AudioRecorder } from "@/components/AudioRecorder";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -63,6 +65,21 @@ export default function EditarFicha() {
     observacoes_cliente: "",
     tags: [] as string[],
   });
+
+  // Calcular progresso de preenchimento
+  const progress = useMemo(() => {
+    const campos = [
+      formData.nome_cliente,
+      formData.telefone_cliente,
+      formData.codigo_ficha,
+      formData.vendedor_responsavel,
+      formData.data_retirada,
+      formData.data_devolucao,
+      formData.valor,
+    ];
+    const preenchidos = campos.filter(campo => campo && campo !== "").length;
+    return Math.round((preenchidos / campos.length) * 100);
+  }, [formData]);
 
 
   useEffect(() => {
@@ -496,9 +513,9 @@ export default function EditarFicha() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header title="Editar Ficha" />
 
-      <main className="flex-1 p-4 pb-20">
+      <main className="flex-1 p-4 pb-20 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-4 flex items-center gap-4">
+          <div className="mb-4 flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -512,37 +529,80 @@ export default function EditarFicha() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-semibold">Editar Ficha</h1>
+            <h1 className="text-lg font-semibold">Editar Ficha</h1>
           </div>
 
-          {isProcessing && (
-            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center gap-3">
-              <Loader2 className="w-5 h-5 text-blue-600 animate-spin flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Processando dados da ficha...</p>
-                <p className="text-xs text-blue-700 dark:text-blue-300">Os campos serão preenchidos automaticamente.</p>
-              </div>
+          {/* Progress Bar */}
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 space-y-2"
+          >
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">Progresso do Preenchimento</span>
+              <span className="text-muted-foreground">{progress}%</span>
             </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <motion.div 
+                className="h-full bg-gradient-to-r from-primary via-primary/80 to-primary"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+          </motion.div>
+
+          {/* Alertas com efeito shimmer */}
+          {isProcessing && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 relative overflow-hidden rounded-xl border border-blue-200/50 bg-gradient-to-r from-blue-50 via-blue-100 to-blue-50 dark:from-blue-950 dark:via-blue-900 dark:to-blue-950 p-4"
+            >
+              <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              <div className="relative flex items-center gap-3">
+                <div className="relative">
+                  <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                  <div className="absolute inset-0 bg-blue-400 blur-lg opacity-50 animate-glow" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                    Processando dados da ficha...
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    Os campos serão preenchidos automaticamente
+                  </p>
+                </div>
+              </div>
+            </motion.div>
           )}
 
           {wasProcessed && (
-            <div className="mb-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3">
-              <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
-                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3"
+            >
+              <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/50">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-green-900 dark:text-green-100">Dados da ficha processados com sucesso</p>
-              </div>
-            </div>
+              <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+                Dados da ficha processados com sucesso!
+              </p>
+            </motion.div>
           )}
 
           {ficha?.status === 'erro' && isNewFicha && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm font-medium text-red-900 dark:text-red-100">Erro ao processar imagem</p>
-              <p className="text-xs text-red-700 dark:text-red-300 mt-1">Você pode preencher os campos manualmente ou reenviar a imagem.</p>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="mb-4 p-4 bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950 border border-red-200 dark:border-red-800 rounded-xl"
+            >
+              <p className="text-sm font-semibold text-red-900 dark:text-red-100">Erro ao processar imagem</p>
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1">Você pode preencher os campos manualmente ou reenviar a imagem.</p>
+            </motion.div>
           )}
 
           <div className="mb-4 flex gap-2">
@@ -578,124 +638,149 @@ export default function EditarFicha() {
             </TooltipProvider>
           </div>
 
-          <div className="space-y-6">
+          <Accordion type="multiple" defaultValue={["observacoes", "cabecalho", "datas"]} className="space-y-3">
             {/* Observações do Cliente */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold">Observações do Cliente</h3>
-              <AudioRecorder
-                onTranscriptionComplete={handleTranscription}
-                onTagsExtracted={handleTagsExtracted}
-                onRecordingStart={() => setIsAudioRecording(true)}
-                onRecordingStop={() => setIsAudioRecording(false)}
-                onProcessingStart={() => setIsAudioProcessing(true)}
-                onProcessingEnd={() => setIsAudioProcessing(false)}
-              />
-              <Textarea
-                id="observacoes_cliente"
-                name="observacoes_cliente"
-                value={formData.observacoes_cliente}
-                onChange={(e) => setFormData({ ...formData, observacoes_cliente: e.target.value })}
-                placeholder="Observações gerais sobre o atendimento..."
-                className="min-h-[100px]"
-              />
-            </div>
-
-            <Separator />
+            <AccordionItem value="observacoes" className="border-none">
+              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <Mic className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-semibold">Observações do Cliente</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pt-4 pb-6 space-y-4">
+                <AudioRecorder
+                  onTranscriptionComplete={handleTranscription}
+                  onTagsExtracted={handleTagsExtracted}
+                  onRecordingStart={() => setIsAudioRecording(true)}
+                  onRecordingStop={() => setIsAudioRecording(false)}
+                  onProcessingStart={() => setIsAudioProcessing(true)}
+                  onProcessingEnd={() => setIsAudioProcessing(false)}
+                />
+                <Textarea
+                  id="observacoes_cliente"
+                  name="observacoes_cliente"
+                  value={formData.observacoes_cliente}
+                  onChange={(e) => setFormData({ ...formData, observacoes_cliente: e.target.value })}
+                  placeholder="Observações gerais sobre o atendimento..."
+                  className="min-h-[100px] transition-all focus:shadow-lg focus:shadow-primary/20"
+                />
+              </AccordionContent>
+            </AccordionItem>
 
             {/* Cabeçalho */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold">Cabeçalho</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nome_cliente">Nome</Label>
-                    <Input
-                      id="nome_cliente"
-                      name="nome_cliente"
-                      value={formData.nome_cliente}
-                      onChange={(e) => setFormData({ ...formData, nome_cliente: e.target.value })}
-                      placeholder="Nome completo"
-                    />
+            <AccordionItem value="cabecalho" className="border-none">
+              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                    <FileText className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-semibold">Cabeçalho</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pt-4 pb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nome_cliente" className="text-xs font-medium">Nome</Label>
+                      <Input
+                        id="nome_cliente"
+                        name="nome_cliente"
+                        value={formData.nome_cliente}
+                        onChange={(e) => setFormData({ ...formData, nome_cliente: e.target.value })}
+                        placeholder="Nome completo"
+                        className="transition-all focus:shadow-lg focus:shadow-primary/20"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="telefone_cliente" className="text-xs font-medium">Telefone</Label>
+                      <Input
+                        id="telefone_cliente"
+                        name="telefone_cliente"
+                        value={formData.telefone_cliente}
+                        onChange={(e) => setFormData({ ...formData, telefone_cliente: e.target.value })}
+                        placeholder="(00) 00000-0000"
+                        className="transition-all focus:shadow-lg focus:shadow-primary/20"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="vendedor_responsavel" className="text-xs font-medium">Vendedor Responsável</Label>
+                      <Select 
+                        value={formData.vendedor_responsavel} 
+                        onValueChange={(value) => setFormData({ ...formData, vendedor_responsavel: value })}
+                        disabled={isLoadingVendedores}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={isLoadingVendedores ? "Carregando..." : "Selecione um vendedor"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vendedores.map((vendedor) => (
+                            <SelectItem key={vendedor.id} value={vendedor.nome || ""}>
+                              {vendedor.nome} {vendedor.unidade_nome ? `(${vendedor.unidade_nome})` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="telefone_cliente">Telefone</Label>
-                    <Input
-                      id="telefone_cliente"
-                      name="telefone_cliente"
-                      value={formData.telefone_cliente}
-                      onChange={(e) => setFormData({ ...formData, telefone_cliente: e.target.value })}
-                      placeholder="(00) 00000-0000"
-                    />
-                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="codigo_ficha" className="text-xs font-medium">Código da Ficha</Label>
+                      <Input
+                        id="codigo_ficha"
+                        name="codigo_ficha"
+                        value={formData.codigo_ficha}
+                        onChange={(e) => setFormData({ ...formData, codigo_ficha: e.target.value })}
+                        placeholder="Código"
+                        className="transition-all focus:shadow-lg focus:shadow-primary/20"
+                      />
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="vendedor_responsavel">Vendedor Responsável</Label>
-                    <Select 
-                      value={formData.vendedor_responsavel} 
-                      onValueChange={(value) => setFormData({ ...formData, vendedor_responsavel: value })}
-                      disabled={isLoadingVendedores}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={isLoadingVendedores ? "Carregando..." : "Selecione um vendedor"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {vendedores.map((vendedor) => (
-                          <SelectItem key={vendedor.id} value={vendedor.nome || ""}>
-                            {vendedor.nome} {vendedor.unidade_nome ? `(${vendedor.unidade_nome})` : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      <Label htmlFor="tipo" className="text-xs font-medium">Tipo de Atendimento</Label>
+                      <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Aluguel">Aluguel</SelectItem>
+                          <SelectItem value="Venda">Venda</SelectItem>
+                          <SelectItem value="Ajuste">Ajuste</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="status" className="text-xs font-medium">Status</Label>
+                      <Input
+                        id="status"
+                        name="status"
+                        value={formData.status === "pendente" ? "Pendente" : formData.status === "ativa" ? "Ativa" : formData.status === "erro" ? "Erro" : formData.status}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
                   </div>
                 </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="codigo_ficha">Código da Ficha</Label>
-                    <Input
-                      id="codigo_ficha"
-                      name="codigo_ficha"
-                      value={formData.codigo_ficha}
-                      onChange={(e) => setFormData({ ...formData, codigo_ficha: e.target.value })}
-                      placeholder="Código"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="tipo">Tipo de Atendimento</Label>
-                    <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Aluguel">Aluguel</SelectItem>
-                        <SelectItem value="Venda">Venda</SelectItem>
-                        <SelectItem value="Ajuste">Ajuste</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Input
-                      id="status"
-                      name="status"
-                      value={formData.status === "pendente" ? "Pendente" : formData.status === "ativa" ? "Ativa" : formData.status === "erro" ? "Erro" : formData.status}
-                      disabled
-                      className="bg-muted"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
+              </AccordionContent>
+            </AccordionItem>
 
             {/* Datas */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold">Datas</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <AccordionItem value="datas" className="border-none">
+              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                    <CalendarIcon2 className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-semibold">Datas</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pt-4 pb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Data de Retirada</Label>
                   <Popover>
@@ -774,14 +859,21 @@ export default function EditarFicha() {
                   </Popover>
                 </div>
               </div>
-            </div>
-
-            <Separator />
+            </AccordionContent>
+            </AccordionItem>
 
             {/* Detalhes do Item */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold">Detalhes do Item</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <AccordionItem value="detalhes" className="border-none">
+              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                    <Shirt className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-semibold">Detalhes do Item</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pt-4 pb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="paleto">Paletó</Label>
                   <Input
@@ -826,38 +918,60 @@ export default function EditarFicha() {
                   />
                 </div>
               </div>
-            </div>
-
-            <Separator />
+            </AccordionContent>
+            </AccordionItem>
 
             {/* Tags */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold">Tags do Cliente</h3>
-              <div className="flex flex-wrap gap-2">
+            <AccordionItem value="tags" className="border-none">
+              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
+                    <Tag className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-semibold">Tags do Cliente</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pt-4 pb-6">
+                <div className="flex flex-wrap gap-2">
                 {formData.tags.length > 0 ? (
                   formData.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.8, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <Badge variant="secondary" className="flex items-center gap-1 bg-gradient-to-r from-primary/20 to-primary/10 border-primary/30 hover:shadow-md transition-all">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    </motion.div>
                   ))
                 ) : (
                   <p className="text-sm text-muted-foreground">Nenhuma tag adicionada ainda.</p>
                 )}
               </div>
-            </div>
-
-            <Separator />
+            </AccordionContent>
+            </AccordionItem>
 
             {/* Pagamento */}
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold">Pagamento</h3>
+            <AccordionItem value="pagamento" className="border-none">
+              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
+                    <DollarSign className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-semibold">Pagamento</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pt-4 pb-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="valor">Valor (R$)</Label>
@@ -894,27 +1008,36 @@ export default function EditarFicha() {
                 />
                 <Label htmlFor="pago">Pagamento realizado</Label>
               </div>
-            </div>
+            </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
-            {/* Botões de ação */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => navigate("/pre-cadastro")}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={loading}
-                className="flex-1"
-              >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar
-              </Button>
-            </div>
-          </div>
+          {/* Botões de ação */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex gap-3 pt-6"
+          >
+            <Button
+              variant="outline"
+              onClick={() => navigate("/pre-cadastro")}
+              className="flex-1 h-12"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={loading}
+              className="flex-1 h-12 text-base font-semibold bg-gradient-to-r from-primary via-primary to-primary/80 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              <span className="relative z-10 flex items-center gap-2">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                {loading ? "Salvando..." : "Salvar Ficha"}
+              </span>
+            </Button>
+          </motion.div>
         </div>
       </main>
 
