@@ -1,0 +1,76 @@
+# Regras do Projeto - Pamplona MVP
+
+## 🚫 PROIBIDO MODIFICAR
+
+### Backend & Infraestrutura
+- **NÃO ALTERAR** estrutura do banco de dados (Supabase)
+- **NÃO MODIFICAR** Edge Functions (`supabase/functions/`)
+- **NÃO MUDAR** schemas de tabelas ou migrations
+- **NÃO TOCAR** em arquivos de configuração do Supabase
+
+### Lógica de Negócio
+- **NÃO ALTERAR** chamadas de API/Edge Functions
+- **NÃO MODIFICAR** hooks customizados (`src/hooks/`)
+- **NÃO MUDAR** fluxos de dados e queries Supabase
+- **NÃO TOCAR** em `src/integrations/supabase/`
+- **NÃO MODIFICAR** contextos (`src/contexts/AuthContext.tsx`)
+- **NÃO ALTERAR** lógica de Realtime subscriptions
+
+### Funcionalidades Críticas
+- **NÃO MODIFICAR** `AudioRecorder.tsx` (gravação e transcrição)
+- **NÃO ALTERAR** lógica de processamento de fichas
+- **NÃO MUDAR** sistema de tags
+- **NÃO MODIFICAR** autenticação e rotas protegidas
+
+## ✅ PERMITIDO MODIFICAR
+
+### Layout & UI
+- ✅ Estilos Tailwind CSS
+- ✅ Componentes visuais do Shadcn/ui
+- ✅ Estrutura HTML/JSX dos componentes
+- ✅ Espaçamentos, cores, tamanhos
+- ✅ Responsividade
+- ✅ Animações e transições
+- ✅ Ícones e ilustrações
+
+### Organização Visual
+- ✅ Ordem de elementos na tela
+- ✅ Grid e flex layouts
+- ✅ Tipografia
+- ✅ Cards e containers
+- ✅ Navegação visual (manter funcionalidade)
+
+## 📋 Diretrizes Gerais
+
+1. **Manter funcionalidades**: Todos os botões e ações devem continuar funcionando exatamente como estão
+2. **Preservar props**: Não remover ou alterar props de componentes que afetam lógica
+3. **Testar visualmente**: Garantir que mudanças de layout não quebrem fluxos
+4. **Mobile-first**: Manter design responsivo
+5. **Acessibilidade**: Preservar aria-labels e estrutura semântica
+
+## 🎯 Arquivos Críticos (NÃO TOCAR na lógica)
+
+```
+src/
+├── integrations/supabase/     # ❌ NÃO MODIFICAR
+├── contexts/AuthContext.tsx   # ❌ NÃO MODIFICAR
+├── hooks/                     # ❌ NÃO MODIFICAR
+└── components/
+    └── AudioRecorder.tsx      # ❌ NÃO MODIFICAR lógica
+
+supabase/
+├── functions/                 # ❌ NÃO MODIFICAR
+└── migrations/                # ❌ NÃO MODIFICAR
+```
+
+## ℹ️ Quando em dúvida
+
+Se uma mudança pode afetar:
+- Chamadas de API
+- Fluxo de dados
+- Estado da aplicação
+- Funcionalidades existentes
+
+**➡️ PERGUNTE ANTES DE MODIFICAR**
+
+
