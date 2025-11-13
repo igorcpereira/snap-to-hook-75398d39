@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Phone, Calendar, DollarSign, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 
@@ -104,34 +105,6 @@ export default function ClienteDetalhes() {
       console.error("Erro ao atualizar cliente:", error);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const getTipoColor = (tipo?: string) => {
-    if (!tipo) return "bg-muted text-muted-foreground";
-    
-    switch (tipo.toLowerCase()) {
-      case "aluguel":
-        return "bg-blue-500/10 text-blue-700 dark:text-blue-400";
-      case "venda":
-        return "bg-green-500/10 text-green-700 dark:text-green-400";
-      case "ajuste":
-        return "bg-purple-500/10 text-purple-700 dark:text-purple-400";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
-
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case "pendente":
-        return "bg-amber-500/10 text-amber-700 dark:text-amber-400";
-      case "ativa":
-        return "bg-green-500/10 text-green-700 dark:text-green-400";
-      case "erro":
-        return "bg-red-500/10 text-red-700 dark:text-red-400";
-      default:
-        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -231,129 +204,98 @@ export default function ClienteDetalhes() {
                 </CardContent>
               </Card>
             ) : (
-              fichas.map((ficha) => (
-                <Card 
-                  key={ficha.id} 
-                  className="overflow-hidden cursor-pointer hover:shadow-md transition-all"
-                  onClick={() => navigate(`/editar-ficha/${ficha.id}`, { state: { cliente_id: id } })}
-                >
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      {/* Header com Código e Tipo */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-sm">
-                            #{ficha.codigo_ficha || "Sem código"}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Criado em {format(new Date(ficha.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                          </p>
-                        </div>
-                        <div className="flex flex-col gap-1.5 items-end">
-                          <Badge className={getTipoColor(ficha.tipo)}>
-                            {ficha.tipo || "N/A"}
-                          </Badge>
-                          <Badge className={getStatusColor(ficha.status)}>
-                            {ficha.status === "pendente" ? "Pendente" : ficha.status === "ativa" ? "Ativa" : "Erro"}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      {/* Datas */}
-                      {(ficha.data_retirada || ficha.data_devolucao || ficha.data_festa) && (
-                        <div className="space-y-1.5">
-                          {ficha.data_retirada && (
-                            <div className="flex items-center gap-2 text-xs">
-                              <Calendar className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-muted-foreground">Retirada:</span>
-                              <span className="font-medium">{format(new Date(ficha.data_retirada), "dd/MM/yyyy", { locale: ptBR })}</span>
-                            </div>
-                          )}
-                          {ficha.data_devolucao && (
-                            <div className="flex items-center gap-2 text-xs">
-                              <Calendar className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-muted-foreground">Devolução:</span>
-                              <span className="font-medium">{format(new Date(ficha.data_devolucao), "dd/MM/yyyy", { locale: ptBR })}</span>
-                            </div>
-                          )}
-                          {ficha.data_festa && (
-                            <div className="flex items-center gap-2 text-xs">
-                              <Calendar className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-muted-foreground">Festa:</span>
-                              <span className="font-medium">{format(new Date(ficha.data_festa), "dd/MM/yyyy", { locale: ptBR })}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Valores */}
-                      {(ficha.valor || ficha.garantia) && (
-                        <>
-                          <Separator />
-                          <div className="space-y-1.5">
-                            {ficha.valor && (
-                              <div className="flex items-center gap-2 text-xs">
-                                <DollarSign className="w-3 h-3 text-muted-foreground" />
-                                <span className="text-muted-foreground">Valor:</span>
-                                <span className="font-medium">R$ {parseFloat(ficha.valor).toFixed(2)}</span>
-                              </div>
-                            )}
-                            {ficha.garantia && (
-                              <div className="flex items-center gap-2 text-xs">
-                                <DollarSign className="w-3 h-3 text-muted-foreground" />
-                                <span className="text-muted-foreground">Garantia:</span>
-                                <span className="font-medium">R$ {parseFloat(ficha.garantia).toFixed(2)}</span>
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      )}
-
-                      {/* Peças */}
-                      {(ficha.paleto || ficha.calca || ficha.camisa || ficha.sapato) && (
-                        <>
-                          <Separator />
-                          <div className="space-y-1">
-                            <p className="text-xs font-medium text-muted-foreground">Peças:</p>
-                            <div className="grid grid-cols-2 gap-1.5 text-xs">
-                              {ficha.paleto && (
-                                <div className="truncate">
-                                  <span className="text-muted-foreground">Paletó:</span> {ficha.paleto}
-                                </div>
-                              )}
-                              {ficha.calca && (
-                                <div className="truncate">
-                                  <span className="text-muted-foreground">Calça:</span> {ficha.calca}
-                                </div>
-                              )}
-                              {ficha.camisa && (
-                                <div className="truncate">
-                                  <span className="text-muted-foreground">Camisa:</span> {ficha.camisa}
-                                </div>
-                              )}
-                              {ficha.sapato && (
-                                <div className="truncate">
-                                  <span className="text-muted-foreground">Sapato:</span> {ficha.sapato}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {/* Status de Pagamento */}
-                      <div className="flex items-center justify-between pt-2">
-                        <span className="text-xs text-muted-foreground">Pagamento:</span>
-                        <Badge variant={ficha.pago ? "default" : "secondary"}>
-                          {ficha.pago ? "Pago" : "Pendente"}
-                        </Badge>
-                      </div>
+              <div className="space-y-3">
+                {fichas.map((ficha) => (
+                  <div 
+                    key={ficha.id}
+                    className="p-4 bg-card rounded-xl border border-border hover:border-primary/50 hover:shadow-md transition-all cursor-pointer"
+                    onClick={() => navigate(`/editar-ficha/${ficha.id}`, { state: { cliente_id: id } })}
+                  >
+                    {/* Header: Status + Código + Chevron */}
+                    <div className="flex items-center gap-3 mb-3">
+                      {/* Bolinha de status */}
+                      <div className={cn(
+                        "w-3 h-3 rounded-full flex-shrink-0",
+                        ficha.status === "ativa" ? "bg-green-500" : 
+                        ficha.status === "pendente" ? "bg-amber-500" : 
+                        ficha.status === "erro" ? "bg-red-500" : "bg-gray-500"
+                      )} />
+                      
+                      {/* Código da ficha */}
+                      <p className="font-semibold text-base flex-1">
+                        #{ficha.codigo_ficha || "Sem código"}
+                      </p>
+                      
+                      {/* Chevron */}
+                      <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                     </div>
-                  </CardContent>
-                </Card>
-              ))
+                    
+                    {/* Tipo + Data + Valor */}
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      <Badge variant="secondary" className="text-xs">
+                        {ficha.tipo || "N/A"}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(ficha.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                      </span>
+                      {ficha.valor && (
+                        <>
+                          <span className="text-xs text-muted-foreground">•</span>
+                          <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                            R$ {parseFloat(ficha.valor).toFixed(2)}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Peças - GRID 2 COLUNAS */}
+                    {(ficha.paleto || ficha.calca || ficha.camisa || ficha.sapato) && (
+                      <div className="mb-3">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span className="text-primary text-sm">👔</span>
+                          <span className="text-xs font-medium text-muted-foreground">Peças:</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                          {ficha.paleto && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-muted-foreground/60">•</span>
+                              <span>Paletó {ficha.paleto}</span>
+                            </div>
+                          )}
+                          {ficha.calca && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-muted-foreground/60">•</span>
+                              <span>Calça {ficha.calca}</span>
+                            </div>
+                          )}
+                          {ficha.camisa && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-muted-foreground/60">•</span>
+                              <span>Camisa {ficha.camisa}</span>
+                            </div>
+                          )}
+                          {ficha.sapato && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-muted-foreground/60">•</span>
+                              <span>Sapato {ficha.sapato}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Status de pagamento */}
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className={ficha.pago ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}>
+                        {ficha.pago ? "✓" : "○"}
+                      </span>
+                      <span className={ficha.pago ? "text-green-600 dark:text-green-400 font-medium" : "text-amber-600 dark:text-amber-400"}>
+                        {ficha.pago ? "Pago" : "Pagamento Pendente"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>

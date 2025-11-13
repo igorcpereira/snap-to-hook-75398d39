@@ -4,9 +4,7 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Users, Phone, ChevronRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import logoJRP from "@/assets/logo-jrp.png";
 import { useClientes } from "@/hooks/useClientes";
 import { formatarTelefone } from "@/lib/utils";
@@ -75,85 +73,32 @@ const Clients = () => {
             ) : (
               <div className="space-y-2">
                 {clientesFiltrados.map((cliente) => (
-                  <Drawer key={cliente.id}>
-                    <DrawerTrigger asChild>
-                      <div className="flex items-center gap-4 p-4 bg-card rounded-xl hover:bg-accent/50 active:bg-accent transition-all cursor-pointer border border-border shadow-sm hover:shadow-md">
-                        {/* Avatar com iniciais */}
-                        <Avatar className="h-12 w-12 border-2 border-primary/20">
-                          <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-semibold text-sm">
-                            {cliente.nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        
-                        {/* Info principal */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-base truncate">{cliente.nome}</p>
-                          {cliente.telefone && (
-                            <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
-                              <Phone className="w-3 h-3" />
-                              <p className="text-xs">{formatarTelefone(cliente.telefone)}</p>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Indicador visual */}
-                        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                      </div>
-                    </DrawerTrigger>
+                  <div 
+                    key={cliente.id}
+                    className="flex items-center gap-4 p-4 bg-card rounded-xl hover:bg-accent/50 active:bg-accent transition-all cursor-pointer border border-border shadow-sm hover:shadow-md"
+                    onClick={() => navigate(`/cliente/${cliente.id}`)}
+                  >
+                    {/* Avatar com iniciais */}
+                    <Avatar className="h-12 w-12 border-2 border-primary/20">
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-semibold text-sm">
+                        {cliente.nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     
-                    {/* Drawer com ações rápidas */}
-                    <DrawerContent className="pb-8">
-                      <DrawerHeader>
-                        <DrawerTitle className="text-center text-xl">{cliente.nome}</DrawerTitle>
-                      </DrawerHeader>
-                      
-                      <div className="px-6 space-y-3">
-                        {/* Avatar grande no drawer */}
-                        <div className="flex justify-center mb-4">
-                          <Avatar className="h-20 w-20 border-4 border-primary/20">
-                            <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-bold text-2xl">
-                              {cliente.nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
+                    {/* Info principal */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-base truncate">{cliente.nome}</p>
+                      {cliente.telefone && (
+                        <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
+                          <Phone className="w-3 h-3" />
+                          <p className="text-xs">{formatarTelefone(cliente.telefone)}</p>
                         </div>
-
-                        {/* Info do cliente */}
-                        {cliente.telefone && (
-                          <div className="flex items-center justify-center gap-2 text-muted-foreground mb-4">
-                            <Phone className="w-4 h-4" />
-                            <span className="text-sm">{formatarTelefone(cliente.telefone)}</span>
-                          </div>
-                        )}
-
-                        {/* Ações rápidas */}
-                        <Button 
-                          className="w-full h-12 text-base" 
-                          onClick={() => navigate(`/cliente/${cliente.id}`)}
-                        >
-                          Ver Detalhes Completos
-                        </Button>
-                        
-                        {cliente.telefone && (
-                          <Button 
-                            variant="outline" 
-                            className="w-full h-12"
-                            onClick={() => window.open(`tel:${cliente.telefone}`)}
-                          >
-                            <Phone className="w-4 h-4 mr-2" />
-                            Ligar Agora
-                          </Button>
-                        )}
-                        
-                        <div className="pt-4 text-center text-xs text-muted-foreground border-t">
-                          Cliente desde {new Date(cliente.created_at).toLocaleDateString('pt-BR', {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric'
-                          })}
-                        </div>
-                      </div>
-                    </DrawerContent>
-                  </Drawer>
+                      )}
+                    </div>
+                    
+                    {/* Indicador visual */}
+                    <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                  </div>
                 ))}
               </div>
             )}
