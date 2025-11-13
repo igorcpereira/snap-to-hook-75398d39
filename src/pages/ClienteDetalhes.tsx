@@ -124,10 +124,10 @@ export default function ClienteDetalhes() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header title="Detalhes do Cliente" />
 
-      <main className="flex-1 p-4 pb-20">
+      <main className="flex-1 p-4 pb-20 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
           {/* Cabeçalho com botão voltar */}
-          <div className="mb-6 flex items-center gap-4">
+          <div className="mb-4 flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -135,67 +135,71 @@ export default function ClienteDetalhes() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-semibold">Detalhes do Cliente</h1>
+            <h1 className="text-lg font-semibold">Detalhes do Cliente</h1>
           </div>
 
-          {/* Informações do Cliente */}
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4 mb-6">
-                <Avatar className="w-20 h-20">
+          {/* Informações do Cliente - VERSÃO COMPACTA */}
+          <Card className="mb-4">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-4">
+                {/* Avatar menor */}
+                <Avatar className="w-14 h-14 border-2 border-primary/20">
                   <AvatarImage src="" />
-                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                  <AvatarFallback className="text-lg bg-gradient-to-br from-primary to-primary/70 text-primary-foreground font-semibold">
                     {formData.nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold mb-1">{cliente?.nome}</h2>
-                  <p className="text-sm text-muted-foreground">
+                
+                {/* Info do cliente inline */}
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-semibold truncate">{cliente?.nome}</h2>
+                  <p className="text-xs text-muted-foreground">
                     Cliente desde {cliente?.created_at ? format(new Date(cliente.created_at), "dd/MM/yyyy", { locale: ptBR }) : "N/A"}
                   </p>
                 </div>
               </div>
 
-              <Separator className="mb-6" />
-
-              {/* Formulário de Edição */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome</Label>
+              {/* Formulário compacto - Grid em desktop */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <div className="space-y-1">
+                  <Label htmlFor="nome" className="text-xs">Nome</Label>
                   <Input
                     id="nome"
                     value={formData.nome}
                     onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                     placeholder="Nome completo"
+                    className="h-9"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="telefone">Telefone</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="telefone" className="text-xs">Telefone</Label>
                   <Input
                     id="telefone"
                     value={formData.telefone}
                     onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
                     placeholder="(00) 00000-0000"
+                    className="h-9"
                   />
                 </div>
-
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="w-full"
-                >
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  <Save className="mr-2 h-4 w-4" />
-                  Salvar Alterações
-                </Button>
               </div>
+
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                size="sm"
+                className="w-full h-9"
+              >
+                {saving && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                <Save className="mr-2 h-3 w-3" />
+                Salvar
+              </Button>
             </CardContent>
           </Card>
 
           {/* Histórico de Fichas */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Histórico de Fichas</h3>
+          <div className="space-y-3">
+            <h3 className="text-base font-semibold">Histórico de Fichas</h3>
             
             {fichas.length === 0 ? (
               <Card>
