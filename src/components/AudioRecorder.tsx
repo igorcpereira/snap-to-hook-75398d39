@@ -96,34 +96,44 @@ export function AudioRecorder({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       {!isRecording ? (
         <Button
           type="button"
           variant="outline"
-          size="icon"
+          size="sm"
           onClick={startRecording}
           disabled={isProcessing}
+          className="h-8"
         >
           {isProcessing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <div className="flex items-center gap-1.5">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span className="text-xs font-medium">Processando...</span>
+            </div>
           ) : (
-            <Mic className="h-4 w-4" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-red-500" />
+              <span className="text-xs font-medium">REC</span>
+            </div>
           )}
         </Button>
       ) : (
         <Button
           type="button"
-          variant="destructive"
-          size="icon"
+          variant="outline"
+          size="sm"
           onClick={stopRecording}
-          className="animate-pulse"
+          className="h-8"
         >
-          <Square className="h-4 w-4" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <span className="text-xs font-medium">Parar</span>
+          </div>
         </Button>
       )}
       <span className="text-xs text-muted-foreground">
-        {isRecording ? "Gravando..." : isProcessing ? "Processando..." : "Gravar áudio"}
+        {isRecording ? "Gravando observações..." : isProcessing ? "" : "Gravar observações"}
       </span>
     </div>
   );

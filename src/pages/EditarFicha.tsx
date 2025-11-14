@@ -532,19 +532,18 @@ export default function EditarFicha() {
             <h1 className="text-lg font-semibold">Editar Ficha</h1>
           </div>
 
-          {/* Progress Bar */}
+          {/* Progress Bar - Minimalista */}
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 space-y-2"
+            className="mb-4 space-y-1.5"
           >
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Progresso do Preenchimento</span>
-              <span className="text-muted-foreground">{progress}%</span>
+            <div className="flex items-center justify-end">
+              <span className="text-xs text-muted-foreground">{progress}%</span>
             </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-1 bg-muted rounded-full overflow-hidden">
               <motion.div 
-                className="h-full bg-gradient-to-r from-primary via-primary/80 to-primary"
+                className="h-full bg-primary"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.5 }}
@@ -638,18 +637,16 @@ export default function EditarFicha() {
             </TooltipProvider>
           </div>
 
-          <Accordion type="multiple" defaultValue={["observacoes", "cabecalho", "datas"]} className="space-y-3">
+          <Accordion type="multiple" defaultValue={["observacoes", "cabecalho", "datas"]} className="space-y-2">
             {/* Observações do Cliente */}
             <AccordionItem value="observacoes" className="border-none">
-              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                    <Mic className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="font-semibold">Observações do Cliente</span>
+              <AccordionTrigger className="hover:no-underline px-0 py-2.5 text-sm">
+                <div className="flex items-center gap-2">
+                  <Mic className="w-4 h-4 text-muted-foreground" />
+                  <span>Observações do Cliente</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-6 pt-4 pb-6 space-y-4">
+              <AccordionContent className="px-0 pt-3 pb-4 space-y-3">
                 <AudioRecorder
                   onTranscriptionComplete={handleTranscription}
                   onTagsExtracted={handleTagsExtracted}
@@ -664,22 +661,20 @@ export default function EditarFicha() {
                   value={formData.observacoes_cliente}
                   onChange={(e) => setFormData({ ...formData, observacoes_cliente: e.target.value })}
                   placeholder="Observações gerais sobre o atendimento..."
-                  className="min-h-[100px] transition-all focus:shadow-lg focus:shadow-primary/20"
+                  className="min-h-[80px] text-sm"
                 />
               </AccordionContent>
             </AccordionItem>
 
             {/* Cabeçalho */}
             <AccordionItem value="cabecalho" className="border-none">
-              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                    <FileText className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="font-semibold">Cabeçalho</span>
+              <AccordionTrigger className="hover:no-underline px-0 py-2.5 text-sm">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <span>Cabeçalho</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-6 pt-4 pb-6">
+              <AccordionContent className="px-0 pt-3 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -690,7 +685,7 @@ export default function EditarFicha() {
                         value={formData.nome_cliente}
                         onChange={(e) => setFormData({ ...formData, nome_cliente: e.target.value })}
                         placeholder="Nome completo"
-                        className="transition-all focus:shadow-lg focus:shadow-primary/20"
+                        className="h-8"
                       />
                     </div>
 
@@ -702,7 +697,7 @@ export default function EditarFicha() {
                         value={formData.telefone_cliente}
                         onChange={(e) => setFormData({ ...formData, telefone_cliente: e.target.value })}
                         placeholder="(00) 00000-0000"
-                        className="transition-all focus:shadow-lg focus:shadow-primary/20"
+                        className="h-8"
                       />
                     </div>
 
@@ -736,7 +731,7 @@ export default function EditarFicha() {
                         value={formData.codigo_ficha}
                         onChange={(e) => setFormData({ ...formData, codigo_ficha: e.target.value })}
                         placeholder="Código"
-                        className="transition-all focus:shadow-lg focus:shadow-primary/20"
+                        className="h-8"
                       />
                     </div>
 
@@ -771,15 +766,13 @@ export default function EditarFicha() {
 
             {/* Datas */}
             <AccordionItem value="datas" className="border-none">
-              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                    <CalendarIcon2 className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="font-semibold">Datas</span>
+              <AccordionTrigger className="hover:no-underline px-0 py-2.5 text-sm">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon2 className="w-4 h-4 text-muted-foreground" />
+                  <span>Datas</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-6 pt-4 pb-6">
+              <AccordionContent className="px-0 pt-3 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Data de Retirada</Label>
@@ -864,57 +857,59 @@ export default function EditarFicha() {
 
             {/* Detalhes do Item */}
             <AccordionItem value="detalhes" className="border-none">
-              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
-                    <Shirt className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="font-semibold">Detalhes do Item</span>
+              <AccordionTrigger className="hover:no-underline px-0 py-2.5 text-sm">
+                <div className="flex items-center gap-2">
+                  <Shirt className="w-4 h-4 text-muted-foreground" />
+                  <span>Detalhes do Item</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-6 pt-4 pb-6">
+              <AccordionContent className="px-0 pt-3 pb-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="paleto">Paletó</Label>
+                  <Label htmlFor="paleto" className="text-xs">Paletó</Label>
                   <Input
                     id="paleto"
                     name="paleto"
                     value={formData.paleto}
                     onChange={(e) => setFormData({ ...formData, paleto: e.target.value })}
                     placeholder="Número"
+                    className="h-8"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="calca">Calça</Label>
+                  <Label htmlFor="calca" className="text-xs">Calça</Label>
                   <Input
                     id="calca"
                     name="calca"
                     value={formData.calca}
                     onChange={(e) => setFormData({ ...formData, calca: e.target.value })}
                     placeholder="Número"
+                    className="h-8"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="camisa">Camisa</Label>
+                  <Label htmlFor="camisa" className="text-xs">Camisa</Label>
                   <Input
                     id="camisa"
                     name="camisa"
                     value={formData.camisa}
                     onChange={(e) => setFormData({ ...formData, camisa: e.target.value })}
                     placeholder="Número"
+                    className="h-8"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sapato">Sapato</Label>
+                  <Label htmlFor="sapato" className="text-xs">Sapato</Label>
                   <Input
                     id="sapato"
                     name="sapato"
                     value={formData.sapato}
                     onChange={(e) => setFormData({ ...formData, sapato: e.target.value })}
                     placeholder="Número"
+                    className="h-8"
                   />
                 </div>
               </div>
@@ -923,15 +918,13 @@ export default function EditarFicha() {
 
             {/* Tags */}
             <AccordionItem value="tags" className="border-none">
-              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
-                    <Tag className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="font-semibold">Tags do Cliente</span>
+              <AccordionTrigger className="hover:no-underline px-0 py-2.5 text-sm">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-muted-foreground" />
+                  <span>Tags do Cliente</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-6 pt-4 pb-6">
+              <AccordionContent className="px-0 pt-3 pb-4">
                 <div className="flex flex-wrap gap-2">
                 {formData.tags.length > 0 ? (
                   formData.tags.map((tag, index) => (
@@ -963,18 +956,16 @@ export default function EditarFicha() {
 
             {/* Pagamento */}
             <AccordionItem value="pagamento" className="border-none">
-              <AccordionTrigger className="hover:no-underline bg-card hover:bg-accent/50 rounded-xl px-6 py-4 transition-all shadow-sm hover:shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
-                    <DollarSign className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="font-semibold">Pagamento</span>
+              <AccordionTrigger className="hover:no-underline px-0 py-2.5 text-sm">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-muted-foreground" />
+                  <span>Pagamento</span>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className="px-6 pt-4 pb-6">
+              <AccordionContent className="px-0 pt-3 pb-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="valor">Valor (R$)</Label>
+                  <Label htmlFor="valor" className="text-xs">Valor (R$)</Label>
                   <Input
                     id="valor"
                     name="valor"
@@ -983,11 +974,12 @@ export default function EditarFicha() {
                     value={formData.valor}
                     onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
                     placeholder="0,00"
+                    className="h-8"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="garantia">Garantia (R$)</Label>
+                  <Label htmlFor="garantia" className="text-xs">Garantia (R$)</Label>
                   <Input
                     id="garantia"
                     name="garantia"
@@ -996,6 +988,7 @@ export default function EditarFicha() {
                     value={formData.garantia}
                     onChange={(e) => setFormData({ ...formData, garantia: e.target.value })}
                     placeholder="0,00"
+                    className="h-8"
                   />
                 </div>
               </div>
@@ -1013,31 +1006,23 @@ export default function EditarFicha() {
           </Accordion>
 
           {/* Botões de ação */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex gap-3 pt-6"
-          >
+          <div className="flex gap-3 pt-4">
             <Button
               variant="outline"
               onClick={() => navigate("/pre-cadastro")}
-              className="flex-1 h-12"
+              className="flex-1"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleSave}
               disabled={loading}
-              className="flex-1 h-12 text-base font-semibold bg-gradient-to-r from-primary via-primary to-primary/80 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 relative overflow-hidden group"
+              className="flex-1"
             >
-              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-              <span className="relative z-10 flex items-center gap-2">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                {loading ? "Salvando..." : "Salvar Ficha"}
-              </span>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar
             </Button>
-          </motion.div>
+          </div>
         </div>
       </main>
 
