@@ -46,7 +46,7 @@ h1, h2, h3, h4, h5, h6 {
     --muted-foreground: var(--tailoring-slate);
 
     --accent: var(--tailoring-taupe);
-    --accent-foreground: 0 0% 100%;
+    --accent-foreground: 41 96.1165% 40.3922%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;

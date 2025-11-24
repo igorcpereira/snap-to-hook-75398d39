@@ -8,7 +8,7 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: fichas = [] } = useFichas();
-  
+
   const fichasPendentes = fichas.filter(f => f.status === 'pendente').length;
 
   const navItems = [
@@ -19,30 +19,30 @@ const BottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-[60]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-primary border-t border-primary-foreground/10 z-[60]">
       <div className="flex items-center justify-around px-4 py-2 max-w-md mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
-          
+
           const showBadge = item.path === "/pre-cadastro" && fichasPendentes > 0;
-          
+
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
                 "flex flex-col items-center gap-1 py-2 px-4 rounded-lg transition-all relative",
-                isActive 
-                  ? "text-primary bg-primary/10 border border-primary/20" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                isActive
+                  ? "text-primary-foreground bg-primary-foreground/20 border border-primary-foreground/30"
+                  : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
               )}
             >
               <div className="relative">
                 <Icon className="w-6 h-6" />
                 {showBadge && (
-                  <Badge 
-                    variant="destructive" 
+                  <Badge
+                    variant="destructive"
                     className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs"
                   >
                     {fichasPendentes}
