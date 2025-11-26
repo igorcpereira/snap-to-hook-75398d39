@@ -32,15 +32,15 @@ const Header = ({
     }
   }, [user]);
 
-  return <header className="bg-primary border-b border-primary-foreground/10 sticky top-0 z-50">
+  return <header className="bg-slate-900 border-b border-slate-700 sticky top-0 z-50">
     <div className="flex items-center justify-between px-4 py-3">
       <div className="flex items-center gap-3">
-        <h1 className="text-lg font-semibold text-primary-foreground">Flavio Pamplona Alfaiataria</h1>
+        <h1 className="text-lg font-semibold text-white">Flavio Pamplona Alfaiataria</h1>
       </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full text-primary-foreground hover:bg-primary-foreground/10">
+          <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full text-white hover:bg-white/10">
             <User className="w-5 h-5" />
           </Button>
         </DropdownMenuTrigger>
