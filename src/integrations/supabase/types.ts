@@ -92,6 +92,9 @@ export type Database = {
           url_audio: string | null
           url_bucket: string | null
           valor: number | null
+          valor_calca: number | null
+          valor_camisa: number | null
+          valor_paleto: number | null
           vendedor_id: string | null
           vendedor_responsavel: string | null
         }
@@ -121,6 +124,9 @@ export type Database = {
           url_audio?: string | null
           url_bucket?: string | null
           valor?: number | null
+          valor_calca?: number | null
+          valor_camisa?: number | null
+          valor_paleto?: number | null
           vendedor_id?: string | null
           vendedor_responsavel?: string | null
         }
@@ -150,6 +156,9 @@ export type Database = {
           url_audio?: string | null
           url_bucket?: string | null
           valor?: number | null
+          valor_calca?: number | null
+          valor_camisa?: number | null
+          valor_paleto?: number | null
           vendedor_id?: string | null
           vendedor_responsavel?: string | null
         }
