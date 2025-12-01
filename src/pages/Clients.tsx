@@ -21,10 +21,14 @@ const Clients = () => {
   // Filtrar clientes por nome, telefone ou ficha
   const clientesFiltrados = clientes.filter(cliente => {
     const termo = termoBusca.toLowerCase().trim();
+    
+    console.log('Termo de busca:', termo);
+    console.log('Cliente:', cliente);
+    
     if (!termo) return true;
     
     // Buscar no nome
-    const nomeMatch = cliente.nome.toLowerCase().includes(termo);
+    const nomeMatch = cliente.nome?.toLowerCase().includes(termo) || false;
     
     // Buscar no telefone (remover formatação)
     const telefoneRaw = cliente.telefone?.replace(/\D/g, '') || '';
@@ -34,6 +38,8 @@ const Clients = () => {
     const fichasMatch = (cliente as any).fichas?.some((ficha: any) => 
       ficha.codigo_ficha?.toString().toLowerCase().includes(termo)
     ) || false;
+    
+    console.log('Matches:', { nomeMatch, telefoneMatch, fichasMatch });
     
     return nomeMatch || telefoneMatch || fichasMatch;
   });
