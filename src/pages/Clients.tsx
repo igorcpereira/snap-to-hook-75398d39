@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
@@ -19,30 +19,27 @@ const Clients = () => {
   };
 
   // Filtrar clientes por nome, telefone ou ficha
-  const clientesFiltrados = clientes.filter(cliente => {
+  const clientesFiltrados = useMemo(() => {
     const termo = termoBusca.toLowerCase().trim();
     
-    console.log('Termo de busca:', termo);
-    console.log('Cliente:', cliente);
+    if (!termo) return clientes;
     
-    if (!termo) return true;
-    
-    // Buscar no nome
-    const nomeMatch = cliente.nome?.toLowerCase().includes(termo) || false;
-    
-    // Buscar no telefone (remover formatação)
-    const telefoneRaw = cliente.telefone?.replace(/\D/g, '') || '';
-    const telefoneMatch = telefoneRaw.includes(termo.replace(/\D/g, ''));
-    
-    // Buscar nos códigos das fichas
-    const fichasMatch = (cliente as any).fichas?.some((ficha: any) => 
-      ficha.codigo_ficha?.toString().toLowerCase().includes(termo)
-    ) || false;
-    
-    console.log('Matches:', { nomeMatch, telefoneMatch, fichasMatch });
-    
-    return nomeMatch || telefoneMatch || fichasMatch;
-  });
+    return clientes.filter(cliente => {
+      // Buscar no nome
+      const nomeMatch = cliente.nome?.toLowerCase().includes(termo) || false;
+      
+      // Buscar no telefone (remover formatação)
+      const telefoneRaw = cliente.telefone?.replace(/\D/g, '') || '';
+      const telefoneMatch = telefoneRaw.includes(termo.replace(/\D/g, ''));
+      
+      // Buscar nos códigos das fichas
+      const fichasMatch = (cliente as any).fichas?.some((ficha: any) => 
+        ficha.codigo_ficha?.toString().toLowerCase().includes(termo)
+      ) || false;
+      
+      return nomeMatch || telefoneMatch || fichasMatch;
+    });
+  }, [clientes, termoBusca]);
 
   return (
     <div className="min-h-screen bg-background pb-20 relative">
