@@ -184,7 +184,7 @@ export default function ClienteDetalhes() {
       <main className="flex-1 p-4 pb-20">
         <div className="max-w-4xl mx-auto">
           {/* Cabeçalho com botão voltar */}
-          <div className="mb-6 flex items-center gap-4">
+          <div className="mb-6">
             <Button
               variant="ghost"
               size="icon"
@@ -192,15 +192,16 @@ export default function ClienteDetalhes() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-xl font-semibold">{cliente?.nome}</h1>
-              <p className="text-sm text-muted-foreground">Detalhes do cliente</p>
-            </div>
           </div>
 
           {/* Informações do Cliente - Compacto */}
           <Card className="mb-4">
             <CardContent className="p-4 space-y-3">
+              {/* Nome do Cliente */}
+              <div>
+                <h1 className="text-xl font-semibold">{cliente?.nome}</h1>
+              </div>
+
               {/* Info básica */}
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
