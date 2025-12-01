@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { Users, Phone, ChevronRight, Search } from "lucide-react";
+import { Users, Phone, ChevronRight, Search, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import logoJRP from "@/assets/logo-jrp.png";
@@ -11,12 +11,37 @@ import { formatarTelefone } from "@/lib/utils";
 
 const Clients = () => {
   const navigate = useNavigate();
-  const { data: clientes = [], isLoading: loading } = useClientes();
+  const { 
+    data, 
+    isLoading: loading, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage 
+  } = useClientes();
   const [termoBusca, setTermoBusca] = useState("");
+  
+  const observer = useRef<IntersectionObserver>();
+  const lastClientRef = useCallback((node: HTMLDivElement) => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    });
+    
+    if (node) observer.current.observe(node);
+  }, [loading, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleClienteClick = (cliente: any) => {
     navigate(`/cliente/${cliente.id}`);
   };
+
+  // Juntar todas as páginas em uma lista única
+  const clientes = useMemo(() => {
+    return data?.pages.flatMap(page => page.data) || [];
+  }, [data]);
 
   // Filtrar clientes por nome, telefone ou ficha
   const clientesFiltrados = useMemo(() => {
@@ -94,33 +119,44 @@ const Clients = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {clientesFiltrados.map((cliente) => (
-              <Card 
-                key={cliente.id} 
-                className="hover:shadow-md transition-all cursor-pointer active:scale-95"
-                onClick={() => handleClienteClick(cliente)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate">
-                        {cliente.nome}
-                      </p>
-                      {cliente.telefone && (
-                        <div className="flex items-center gap-1 mt-1 text-muted-foreground">
-                          <Phone className="w-3 h-3" />
-                          <p className="text-xs">{formatarTelefone(cliente.telefone)}</p>
+                {clientesFiltrados.map((cliente, index) => {
+                  const isLast = index === clientesFiltrados.length - 1;
+                  
+                  return (
+                    <Card 
+                      key={cliente.id} 
+                      ref={isLast ? lastClientRef : undefined}
+                      className="hover:shadow-md transition-all cursor-pointer active:scale-95"
+                      onClick={() => handleClienteClick(cliente)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm truncate">
+                              {cliente.nome}
+                            </p>
+                            {cliente.telefone && (
+                              <div className="flex items-center gap-1 mt-1 text-muted-foreground">
+                                <Phone className="w-3 h-3" />
+                                <p className="text-xs">{formatarTelefone(cliente.telefone)}</p>
+                              </div>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Cadastrado em {new Date(cliente.created_at).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                         </div>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Cadastrado em {new Date(cliente.created_at).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+                
+                {isFetchingNextPage && (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                )}
               </div>
             )}
           </div>
