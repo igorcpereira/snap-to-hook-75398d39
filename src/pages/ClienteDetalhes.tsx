@@ -192,7 +192,10 @@ export default function ClienteDetalhes() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-semibold">Detalhes do Cliente</h1>
+            <div>
+              <h1 className="text-xl font-semibold">{cliente?.nome}</h1>
+              <p className="text-sm text-muted-foreground">Detalhes do cliente</p>
+            </div>
           </div>
 
           {/* Informações do Cliente - Compacto */}
@@ -208,17 +211,20 @@ export default function ClienteDetalhes() {
               </div>
 
               {/* Tags */}
-              {tags.length > 0 && (
+              {tags && tags.length > 0 && (
                 <div className="flex items-start gap-2">
                   <TagIcon className="w-4 h-4 text-muted-foreground mt-0.5" />
                   <div className="flex flex-wrap gap-1.5">
                     {tags.map((tag) => (
                       <Badge 
-                        key={tag.id} 
-                        style={{ backgroundColor: `${tag.cor}20`, color: tag.cor }}
-                        className="text-xs"
+                        key={tag?.id} 
+                        style={{ 
+                          backgroundColor: tag?.cor ? `${tag.cor}20` : '#3B82F620', 
+                          color: tag?.cor || '#3B82F6'
+                        }}
+                        className="text-xs border-0"
                       >
-                        {tag.nome}
+                        {tag?.nome}
                       </Badge>
                     ))}
                   </div>
