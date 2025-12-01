@@ -68,83 +68,66 @@ const Clients = () => {
       </div>
       
       <main className="px-4 py-6 max-w-md mx-auto relative z-10">
+        {/* Campo de busca sempre visível */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Buscar por nome, telefone ou ficha..."
+            value={termoBusca}
+            onChange={(e) => setTermoBusca(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
         {loading ? (
           <div className="bg-card rounded-2xl p-12 text-center shadow-sm">
             <p className="text-muted-foreground">Carregando...</p>
           </div>
         ) : clientes.length === 0 ? (
           <div className="bg-card rounded-2xl p-12 text-center shadow-sm">
-            <div className="w-16 h-16 rounded-full bg-accent mx-auto mb-4 flex items-center justify-center">
-              <Users className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-lg font-semibold text-foreground mb-2">
-              Nenhum cliente cadastrado
-            </h2>
             <p className="text-muted-foreground text-sm">
-              Os clientes aparecerão aqui após o primeiro cadastro.
+              {termoBuscaDebounced ? 'Nenhum resultado encontrado.' : 'Nenhum cliente cadastrado'}
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* Campo de filtro */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Buscar por nome, telefone ou ficha..."
-                value={termoBusca}
-                onChange={(e) => setTermoBusca(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+          <div className="space-y-3">
+            {clientes.map((cliente, index) => {
+              const isLast = index === clientes.length - 1;
 
-            {/* Lista de clientes */}
-            {clientes.length === 0 ? (
-              <div className="bg-card rounded-2xl p-12 text-center shadow-sm">
-                <p className="text-muted-foreground text-sm">
-                  Nenhum resultado encontrado.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {clientes.map((cliente, index) => {
-                  const isLast = index === clientes.length - 1;
-                  
-                  return (
-                    <Card 
-                      key={cliente.id} 
-                      ref={isLast ? lastClientRef : undefined}
-                      className="hover:shadow-md transition-all cursor-pointer active:scale-95"
-                      onClick={() => handleClienteClick(cliente)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm truncate">
-                              {cliente.nome}
-                            </p>
-                            {cliente.telefone && (
-                              <div className="flex items-center gap-1 mt-1 text-muted-foreground">
-                                <Phone className="w-3 h-3" />
-                                <p className="text-xs">{formatarTelefone(cliente.telefone)}</p>
-                              </div>
-                            )}
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Cadastrado em {new Date(cliente.created_at).toLocaleDateString('pt-BR')}
-                            </p>
+              return (
+                <Card 
+                  key={cliente.id} 
+                  ref={isLast ? lastClientRef : undefined}
+                  className="hover:shadow-md transition-all cursor-pointer active:scale-95"
+                  onClick={() => handleClienteClick(cliente)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">
+                          {cliente.nome}
+                        </p>
+                        {cliente.telefone && (
+                          <div className="flex items-center gap-1 mt-1 text-muted-foreground">
+                            <Phone className="w-3 h-3" />
+                            <p className="text-xs">{formatarTelefone(cliente.telefone)}</p>
                           </div>
-                          <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-                
-                {isFetchingNextPage && (
-                  <div className="flex justify-center py-4">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                  </div>
-                )}
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Cadastrado em {new Date(cliente.created_at).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            
+            {isFetchingNextPage && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             )}
           </div>
