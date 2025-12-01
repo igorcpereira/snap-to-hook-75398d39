@@ -36,7 +36,12 @@ export const useClientes = (termoBusca?: string) => {
         const termo = `%${termoBusca.trim()}%`;
         const termoSemFormatacao = termoBusca.replace(/\D/g, '');
         
-        query = query.or(`nome.ilike.${termo},telefone.ilike.%${termoSemFormatacao}%,fichas.codigo_ficha.ilike.${termo}`);
+        // Buscar apenas em nome e telefone (campos diretos da tabela clientes)
+        if (termoSemFormatacao) {
+          query = query.or(`nome.ilike.${termo},telefone.ilike.%${termoSemFormatacao}%`);
+        } else {
+          query = query.ilike('nome', termo);
+        }
       }
 
       query = query
