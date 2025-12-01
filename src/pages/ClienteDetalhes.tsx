@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Phone, Calendar, DollarSign, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Phone, Calendar, DollarSign, Save, Loader2, Tag as TagIcon, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -22,9 +21,10 @@ export default function ClienteDetalhes() {
   const [saving, setSaving] = useState(false);
   const [cliente, setCliente] = useState<any>(null);
   const [fichas, setFichas] = useState<any[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
   const [formData, setFormData] = useState({
-    nome: "",
     telefone: "",
+    ltv: "",
   });
 
   useEffect(() => {
@@ -51,8 +51,8 @@ export default function ClienteDetalhes() {
 
         setCliente(clienteData);
         setFormData({
-          nome: clienteData.nome || "",
           telefone: clienteData.telefone || "",
+          ltv: clienteData.ltv?.toString() || "",
         });
 
         // Buscar fichas do cliente
@@ -64,6 +64,22 @@ export default function ClienteDetalhes() {
 
         if (fichasError) throw fichasError;
         setFichas(fichasData || []);
+
+        // Buscar tags do cliente
+        const { data: tagsData, error: tagsError } = await supabase
+          .from('relacao_cliente_tag')
+          .select(`
+            id_tag,
+            tags (
+              id,
+              nome,
+              cor
+            )
+          `)
+          .eq('id_cliente', id);
+
+        if (tagsError) throw tagsError;
+        setTags(tagsData?.map((r: any) => r.tags).filter(Boolean) || []);
       } catch (error) {
         console.error("Erro ao carregar dados do cliente:", error);
       } finally {
@@ -82,8 +98,8 @@ export default function ClienteDetalhes() {
       const { error } = await supabase
         .from('clientes')
         .update({
-          nome: formData.nome,
           telefone: formData.telefone,
+          ltv: formData.ltv ? parseFloat(formData.ltv) : null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id);
@@ -99,9 +115,23 @@ export default function ClienteDetalhes() {
 
       if (clienteData) {
         setCliente(clienteData);
+        setFormData({
+          telefone: clienteData.telefone || "",
+          ltv: clienteData.ltv?.toString() || "",
+        });
       }
+
+      toast({
+        title: "Cliente atualizado",
+        description: "As informações foram salvas com sucesso",
+      });
     } catch (error) {
       console.error("Erro ao atualizar cliente:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível atualizar as informações",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -165,56 +195,77 @@ export default function ClienteDetalhes() {
             <h1 className="text-xl font-semibold">Detalhes do Cliente</h1>
           </div>
 
-          {/* Informações do Cliente */}
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4 mb-6">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src="" />
-                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                    {formData.nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold mb-1">{cliente?.nome}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Cliente desde {cliente?.created_at ? format(new Date(cliente.created_at), "dd/MM/yyyy", { locale: ptBR }) : "N/A"}
-                  </p>
-                </div>
+          {/* Informações do Cliente - Compacto */}
+          <Card className="mb-4">
+            <CardContent className="p-4 space-y-3">
+              {/* Info básica */}
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Cliente desde:</span>
+                <span className="font-medium">
+                  {cliente?.created_at ? format(new Date(cliente.created_at), "dd/MM/yyyy", { locale: ptBR }) : "N/A"}
+                </span>
               </div>
 
-              <Separator className="mb-6" />
-
-              {/* Formulário de Edição */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome</Label>
-                  <Input
-                    id="nome"
-                    value={formData.nome}
-                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    placeholder="Nome completo"
-                  />
+              {/* Tags */}
+              {tags.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <TagIcon className="w-4 h-4 text-muted-foreground mt-0.5" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map((tag) => (
+                      <Badge 
+                        key={tag.id} 
+                        style={{ backgroundColor: `${tag.cor}20`, color: tag.cor }}
+                        className="text-xs"
+                      >
+                        {tag.nome}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="telefone">Telefone</Label>
-                  <Input
-                    id="telefone"
-                    value={formData.telefone}
-                    onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                    placeholder="(00) 00000-0000"
-                  />
+              <Separator />
+
+              {/* Formulário - Compacto */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="telefone" className="text-xs">Telefone</Label>
+                    <Input
+                      id="telefone"
+                      value={formData.telefone}
+                      onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                      placeholder="(00) 00000-0000"
+                      className="h-9 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ltv" className="text-xs flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3" />
+                      LTV (R$)
+                    </Label>
+                    <Input
+                      id="ltv"
+                      type="number"
+                      value={formData.ltv}
+                      onChange={(e) => setFormData({ ...formData, ltv: e.target.value })}
+                      placeholder="0.00"
+                      className="h-9 text-sm"
+                    />
+                  </div>
                 </div>
 
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="w-full"
+                  size="sm"
+                  className="w-full h-9"
                 >
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  <Save className="mr-2 h-4 w-4" />
-                  Salvar Alterações
+                  {saving && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                  <Save className="mr-2 h-3 w-3" />
+                  Salvar
                 </Button>
               </div>
             </CardContent>
