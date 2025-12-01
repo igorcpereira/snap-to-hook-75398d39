@@ -10,20 +10,36 @@ export const useClientes = () => {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const { data, error } = await supabase
+      // Buscar a role do usuário
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      let query = supabase
         .from('clientes')
         .select(`
           *,
           fichas (codigo_ficha)
-        `)
-        .eq('vendedor_id', user.id)
-        .order('created_at', { ascending: false });
+        `);
+
+      // Apenas vendedores filtram por vendedor_id
+      // Gestores, masters, admins e usuários da unidade "Todas" veem todos
+      if (userRole?.role === 'vendedor') {
+        query = query.eq('vendedor_id', user.id);
+      }
+      // Para franqueados, a política RLS já cuida do filtro por unidade
+
+      query = query.order('created_at', { ascending: false });
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       return data || [];
     },
     enabled: !!user?.id,
-    refetchOnMount: 'always', // Sempre busca novos dados ao montar o componente
-    refetchOnWindowFocus: true, // Busca ao focar na janela
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 };
