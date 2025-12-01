@@ -1,14 +1,16 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+
+const PAGE_SIZE = 20;
 
 export const useClientes = () => {
   const { user } = useAuth();
 
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['clientes', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!user?.id) return { data: [], nextPage: undefined };
 
       // Buscar a role do usuário
       const { data: userRole } = await supabase
@@ -22,24 +24,30 @@ export const useClientes = () => {
         .select(`
           *,
           fichas (codigo_ficha)
-        `);
+        `, { count: 'exact' });
 
       // Apenas vendedores filtram por vendedor_id
-      // Gestores, masters, admins e usuários da unidade "Todas" veem todos
       if (userRole?.role === 'vendedor') {
         query = query.eq('vendedor_id', user.id);
       }
-      // Para franqueados, a política RLS já cuida do filtro por unidade
 
-      query = query.order('created_at', { ascending: false });
+      query = query
+        .order('created_at', { ascending: false })
+        .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
       
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       
       if (error) throw error;
-      return data || [];
+      
+      const hasMore = count ? (pageParam + 1) * PAGE_SIZE < count : false;
+      
+      return {
+        data: data || [],
+        nextPage: hasMore ? pageParam + 1 : undefined,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
     enabled: !!user?.id,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    initialPageParam: 0,
   });
 };
