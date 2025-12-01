@@ -18,7 +18,9 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          ltv: number | null
           nome: string
+          nome_vendedor: string
           telefone: string | null
           updated_at: string
           vendedor_id: string | null
@@ -26,7 +28,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          ltv?: number | null
           nome: string
+          nome_vendedor?: string
           telefone?: string | null
           updated_at?: string
           vendedor_id?: string | null
@@ -34,10 +38,42 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          ltv?: number | null
           nome?: string
+          nome_vendedor?: string
           telefone?: string | null
           updated_at?: string
           vendedor_id?: string | null
+        }
+        Relationships: []
+      }
+      clientes_import: {
+        Row: {
+          data: string | null
+          item: string | null
+          noivo: string | null
+          nome: string | null
+          telefone: string | null
+          valor: number | null
+          vendedor: string | null
+        }
+        Insert: {
+          data?: string | null
+          item?: string | null
+          noivo?: string | null
+          nome?: string | null
+          telefone?: string | null
+          valor?: number | null
+          vendedor?: string | null
+        }
+        Update: {
+          data?: string | null
+          item?: string | null
+          noivo?: string | null
+          nome?: string | null
+          telefone?: string | null
+          valor?: number | null
+          vendedor?: string | null
         }
         Relationships: []
       }
@@ -77,7 +113,7 @@ export type Database = {
           data_retirada: string | null
           descricao_cliente: string | null
           enviada_whatsapp: boolean
-          garantia: number | null
+          garantia: string | null
           id: string
           nome_cliente: string | null
           pago: boolean
@@ -91,10 +127,10 @@ export type Database = {
           updated_at: string
           url_audio: string | null
           url_bucket: string | null
-          valor: number | null
-          valor_calca: number | null
-          valor_camisa: number | null
-          valor_paleto: number | null
+          valor: string | null
+          valor_calca: string | null
+          valor_camisa: string | null
+          valor_paleto: string | null
           vendedor_id: string | null
           vendedor_responsavel: string | null
         }
@@ -109,7 +145,7 @@ export type Database = {
           data_retirada?: string | null
           descricao_cliente?: string | null
           enviada_whatsapp?: boolean
-          garantia?: number | null
+          garantia?: string | null
           id?: string
           nome_cliente?: string | null
           pago?: boolean
@@ -123,10 +159,10 @@ export type Database = {
           updated_at?: string
           url_audio?: string | null
           url_bucket?: string | null
-          valor?: number | null
-          valor_calca?: number | null
-          valor_camisa?: number | null
-          valor_paleto?: number | null
+          valor?: string | null
+          valor_calca?: string | null
+          valor_camisa?: string | null
+          valor_paleto?: string | null
           vendedor_id?: string | null
           vendedor_responsavel?: string | null
         }
@@ -141,7 +177,7 @@ export type Database = {
           data_retirada?: string | null
           descricao_cliente?: string | null
           enviada_whatsapp?: boolean
-          garantia?: number | null
+          garantia?: string | null
           id?: string
           nome_cliente?: string | null
           pago?: boolean
@@ -155,10 +191,10 @@ export type Database = {
           updated_at?: string
           url_audio?: string | null
           url_bucket?: string | null
-          valor?: number | null
-          valor_calca?: number | null
-          valor_camisa?: number | null
-          valor_paleto?: number | null
+          valor?: string | null
+          valor_calca?: string | null
+          valor_camisa?: string | null
+          valor_paleto?: string | null
           vendedor_id?: string | null
           vendedor_responsavel?: string | null
         }
