@@ -36,11 +36,28 @@ export const useClientes = (termoBusca?: string) => {
         const termo = `%${termoBusca.trim()}%`;
         const termoSemFormatacao = termoBusca.replace(/\D/g, '');
         
-        // Buscar apenas em nome e telefone (campos diretos da tabela clientes)
-        if (termoSemFormatacao) {
-          query = query.or(`nome.ilike.${termo},telefone.ilike.%${termoSemFormatacao}%`);
+        // Primeiro buscar fichas que correspondem ao termo
+        const { data: fichasEncontradas } = await supabase
+          .from('fichas')
+          .select('cliente_id')
+          .ilike('codigo_ficha', termo);
+        
+        const clienteIdsDasFichas = fichasEncontradas?.map(f => f.cliente_id).filter(Boolean) || [];
+        
+        // Buscar por nome, telefone ou IDs dos clientes com fichas correspondentes
+        if (clienteIdsDasFichas.length > 0) {
+          if (termoSemFormatacao) {
+            query = query.or(`nome.ilike.${termo},telefone.ilike.%${termoSemFormatacao}%,id.in.(${clienteIdsDasFichas.join(',')})`);
+          } else {
+            query = query.or(`nome.ilike.${termo},id.in.(${clienteIdsDasFichas.join(',')})`);
+          }
         } else {
-          query = query.ilike('nome', termo);
+          // Se não encontrou fichas, buscar apenas por nome e telefone
+          if (termoSemFormatacao) {
+            query = query.or(`nome.ilike.${termo},telefone.ilike.%${termoSemFormatacao}%`);
+          } else {
+            query = query.ilike('nome', termo);
+          }
         }
       }
 
