@@ -1,4 +1,4 @@
-import { Camera, ArrowRight, AlertCircle } from "lucide-react";
+import { Camera, ArrowRight, AlertCircle, Tag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
@@ -9,11 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 import logoJRP from "@/assets/logo-jrp.png";
 import { useFichas } from "@/hooks/useFichas";
 import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [nomeVendedor, setNomeVendedor] = useState<string>('Vendedor(a)');
+  const [isImporting, setIsImporting] = useState(false);
   const { data: fichas = [] } = useFichas();
   
   const fichasPendentes = fichas.filter(f => f.status === 'pendente').length;
@@ -32,6 +35,40 @@ const Dashboard = () => {
         });
     }
   }, [user]);
+
+  const handleImportarTags = async () => {
+    setIsImporting(true);
+    
+    try {
+      toast({
+        title: "Iniciando importação...",
+        description: "Processando tags dos clientes importados",
+      });
+
+      const { data, error } = await supabase.functions.invoke('popular-tags-clientes');
+
+      if (error) throw error;
+
+      if (data?.success) {
+        const stats = data.stats;
+        toast({
+          title: "Importação concluída!",
+          description: `${stats.clientesEncontrados} clientes encontrados. ${stats.relacoesCreatedItem} tags de item e ${stats.relacoesCreatedNoivo} tags de noivo criadas.`,
+        });
+      } else {
+        throw new Error(data?.error || 'Erro desconhecido');
+      }
+    } catch (error) {
+      console.error('Erro ao importar tags:', error);
+      toast({
+        title: "Erro na importação",
+        description: error instanceof Error ? error.message : "Não foi possível importar as tags",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
   return <div className="min-h-screen bg-background pb-20 relative">
       <Header title="Início" />
       
@@ -77,6 +114,28 @@ const Dashboard = () => {
             </div>
           </Card>
         )}
+
+        {/* Importar Tags */}
+        <Card className="p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="bg-primary/20 p-2 rounded-full">
+              <Tag className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-foreground">Importar Tags</h3>
+              <p className="text-sm text-muted-foreground">
+                Popular tags dos clientes importados
+              </p>
+            </div>
+          </div>
+          <Button 
+            onClick={handleImportarTags}
+            disabled={isImporting}
+            className="w-full"
+          >
+            {isImporting ? 'Importando...' : 'Executar Importação'}
+          </Button>
+        </Card>
       </main>
 
       <BottomNav />
