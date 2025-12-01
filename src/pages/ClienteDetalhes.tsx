@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Phone, Calendar, DollarSign, Save, Loader2, Tag as TagIcon, TrendingUp } from "lucide-react";
+import { ArrowLeft, Phone, Calendar, DollarSign, Loader2, Tag as TagIcon, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Header from "@/components/Header";
@@ -18,14 +15,9 @@ export default function ClienteDetalhes() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [cliente, setCliente] = useState<any>(null);
   const [fichas, setFichas] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
-    telefone: "",
-    ltv: "",
-  });
 
   useEffect(() => {
     const loadClienteData = async () => {
@@ -50,10 +42,6 @@ export default function ClienteDetalhes() {
         }
 
         setCliente(clienteData);
-        setFormData({
-          telefone: clienteData.telefone || "",
-          ltv: clienteData.ltv?.toString() || "",
-        });
 
         // Buscar fichas do cliente
         const { data: fichasData, error: fichasError } = await supabase
@@ -89,53 +77,6 @@ export default function ClienteDetalhes() {
 
     loadClienteData();
   }, [id, navigate]);
-
-  const handleSave = async () => {
-    if (!id) return;
-
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('clientes')
-        .update({
-          telefone: formData.telefone,
-          ltv: formData.ltv ? parseFloat(formData.ltv) : null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      // Recarregar dados do cliente
-      const { data: clienteData } = await supabase
-        .from('clientes')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (clienteData) {
-        setCliente(clienteData);
-        setFormData({
-          telefone: clienteData.telefone || "",
-          ltv: clienteData.ltv?.toString() || "",
-        });
-      }
-
-      toast({
-        title: "Cliente atualizado",
-        description: "As informações foram salvas com sucesso",
-      });
-    } catch (error) {
-      console.error("Erro ao atualizar cliente:", error);
-      toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível atualizar as informações",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const getTipoColor = (tipo?: string) => {
     if (!tipo) return "bg-muted text-muted-foreground";
@@ -234,46 +175,23 @@ export default function ClienteDetalhes() {
 
               <Separator />
 
-              {/* Formulário - Compacto */}
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="telefone" className="text-xs">Telefone</Label>
-                    <Input
-                      id="telefone"
-                      value={formData.telefone}
-                      onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                      placeholder="(00) 00000-0000"
-                      className="h-9 text-sm"
-                    />
+              {/* Informações adicionais - Apenas leitura */}
+              <div className="space-y-2">
+                {cliente?.telefone && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Telefone:</span>
+                    <span className="font-medium">{cliente.telefone}</span>
                   </div>
+                )}
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="ltv" className="text-xs flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" />
-                      LTV (R$)
-                    </Label>
-                    <Input
-                      id="ltv"
-                      type="number"
-                      value={formData.ltv}
-                      onChange={(e) => setFormData({ ...formData, ltv: e.target.value })}
-                      placeholder="0.00"
-                      className="h-9 text-sm"
-                    />
+                {cliente?.ltv && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">LTV:</span>
+                    <span className="font-medium">R$ {parseFloat(cliente.ltv).toFixed(2)}</span>
                   </div>
-                </div>
-
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                  size="sm"
-                  className="w-full h-9"
-                >
-                  {saving && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
-                  <Save className="mr-2 h-3 w-3" />
-                  Salvar
-                </Button>
+                )}
               </div>
             </CardContent>
           </Card>
