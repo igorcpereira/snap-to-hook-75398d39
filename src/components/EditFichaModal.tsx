@@ -134,6 +134,35 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Validar codigo_ficha obrigatório
+      if (!formData.codigo_ficha || formData.codigo_ficha.trim() === '') {
+        toast({
+          title: "Erro",
+          description: "Código da ficha é obrigatório",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Validar codigo_ficha único (ignorando o próprio ID)
+      const { data: fichaExistente } = await supabase
+        .from('fichas')
+        .select('id')
+        .eq('codigo_ficha', formData.codigo_ficha.trim())
+        .neq('id', ficha.id)
+        .maybeSingle();
+
+      if (fichaExistente) {
+        toast({
+          title: "Erro",
+          description: "Este código de ficha já existe",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
       // Gerenciar cliente: verificar se existe ou criar novo
       let clienteId: string | null = null;
       

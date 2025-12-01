@@ -19,7 +19,7 @@ const BottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-primary border-t border-primary-foreground/10 z-[60]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-700 z-[60]">
       <div className="flex items-center justify-around px-4 py-2 max-w-md mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -34,8 +34,8 @@ const BottomNav = () => {
               className={cn(
                 "flex flex-col items-center gap-1 py-2 px-4 rounded-lg transition-all relative",
                 isActive
-                  ? "text-primary-foreground bg-primary-foreground/20 border border-primary-foreground/30"
-                  : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+                  ? "text-white bg-white/20 border border-white/30"
+                  : "text-white/70 hover:text-white hover:bg-white/10"
               )}
             >
               <div className="relative">

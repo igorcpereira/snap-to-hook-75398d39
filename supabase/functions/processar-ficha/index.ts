@@ -174,6 +174,50 @@ async function processWebhookInBackground(
           camposIgnorados.push('garantia')
         }
         
+        // Campo pago (boolean)
+        if (resultado.pago !== null && resultado.pago !== undefined) {
+          updateData.pago = resultado.pago === true
+          console.log('Campo pago:', resultado.pago)
+        } else {
+          camposIgnorados.push('pago')
+        }
+        
+        // Valor individual do paletó
+        if (resultado.paleto?.valor != null && resultado.paleto.valor !== '') {
+          const valorPaletoParsed = parseFloat(resultado.paleto.valor)
+          if (!isNaN(valorPaletoParsed)) {
+            updateData.valor_paleto = valorPaletoParsed
+          } else {
+            camposIgnorados.push('valor_paleto (inválido)')
+          }
+        } else {
+          camposIgnorados.push('valor_paleto')
+        }
+        
+        // Valor individual da calça
+        if (resultado.calca?.valor != null && resultado.calca.valor !== '') {
+          const valorCalcaParsed = parseFloat(resultado.calca.valor)
+          if (!isNaN(valorCalcaParsed)) {
+            updateData.valor_calca = valorCalcaParsed
+          } else {
+            camposIgnorados.push('valor_calca (inválido)')
+          }
+        } else {
+          camposIgnorados.push('valor_calca')
+        }
+        
+        // Valor individual da camisa
+        if (resultado.camisa?.valor != null && resultado.camisa.valor !== '') {
+          const valorCamisaParsed = parseFloat(resultado.camisa.valor)
+          if (!isNaN(valorCamisaParsed)) {
+            updateData.valor_camisa = valorCamisaParsed
+          } else {
+            camposIgnorados.push('valor_camisa (inválido)')
+          }
+        } else {
+          camposIgnorados.push('valor_camisa')
+        }
+        
         // Log de campos ignorados
         if (camposIgnorados.length > 0) {
           console.log('Campos ignorados (null/vazio):', camposIgnorados.join(', '))

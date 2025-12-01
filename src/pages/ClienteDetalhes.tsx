@@ -1,15 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Phone, Calendar, DollarSign, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Phone, Calendar, DollarSign, Loader2, Tag as TagIcon, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Header from "@/components/Header";
@@ -19,13 +15,9 @@ export default function ClienteDetalhes() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [cliente, setCliente] = useState<any>(null);
   const [fichas, setFichas] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
-    nome: "",
-    telefone: "",
-  });
+  const [tags, setTags] = useState<any[]>([]);
 
   useEffect(() => {
     const loadClienteData = async () => {
@@ -50,10 +42,6 @@ export default function ClienteDetalhes() {
         }
 
         setCliente(clienteData);
-        setFormData({
-          nome: clienteData.nome || "",
-          telefone: clienteData.telefone || "",
-        });
 
         // Buscar fichas do cliente
         const { data: fichasData, error: fichasError } = await supabase
@@ -64,6 +52,22 @@ export default function ClienteDetalhes() {
 
         if (fichasError) throw fichasError;
         setFichas(fichasData || []);
+
+        // Buscar tags do cliente
+        const { data: tagsData, error: tagsError } = await supabase
+          .from('relacao_cliente_tag')
+          .select(`
+            id_tag,
+            tags (
+              id,
+              nome,
+              cor
+            )
+          `)
+          .eq('id_cliente', id);
+
+        if (tagsError) throw tagsError;
+        setTags(tagsData?.map((r: any) => r.tags).filter(Boolean) || []);
       } catch (error) {
         console.error("Erro ao carregar dados do cliente:", error);
       } finally {
@@ -73,39 +77,6 @@ export default function ClienteDetalhes() {
 
     loadClienteData();
   }, [id, navigate]);
-
-  const handleSave = async () => {
-    if (!id) return;
-
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from('clientes')
-        .update({
-          nome: formData.nome,
-          telefone: formData.telefone,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      // Recarregar dados do cliente
-      const { data: clienteData } = await supabase
-        .from('clientes')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (clienteData) {
-        setCliente(clienteData);
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar cliente:", error);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const getTipoColor = (tipo?: string) => {
     if (!tipo) return "bg-muted text-muted-foreground";
@@ -154,7 +125,7 @@ export default function ClienteDetalhes() {
       <main className="flex-1 p-4 pb-20">
         <div className="max-w-4xl mx-auto">
           {/* Cabeçalho com botão voltar */}
-          <div className="mb-6 flex items-center gap-4">
+          <div className="mb-6">
             <Button
               variant="ghost"
               size="icon"
@@ -162,60 +133,65 @@ export default function ClienteDetalhes() {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-semibold">Detalhes do Cliente</h1>
           </div>
 
-          {/* Informações do Cliente */}
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4 mb-6">
-                <Avatar className="w-20 h-20">
-                  <AvatarImage src="" />
-                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                    {formData.nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold mb-1">{cliente?.nome}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Cliente desde {cliente?.created_at ? format(new Date(cliente.created_at), "dd/MM/yyyy", { locale: ptBR }) : "N/A"}
-                  </p>
-                </div>
+          {/* Informações do Cliente - Compacto */}
+          <Card className="mb-4">
+            <CardContent className="p-4 space-y-3">
+              {/* Nome do Cliente */}
+              <div>
+                <h1 className="text-xl font-semibold">{cliente?.nome}</h1>
               </div>
 
-              <Separator className="mb-6" />
+              {/* Info básica */}
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Cliente desde:</span>
+                <span className="font-medium">
+                  {cliente?.created_at ? format(new Date(cliente.created_at), "dd/MM/yyyy", { locale: ptBR }) : "N/A"}
+                </span>
+              </div>
 
-              {/* Formulário de Edição */}
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome</Label>
-                  <Input
-                    id="nome"
-                    value={formData.nome}
-                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    placeholder="Nome completo"
-                  />
+              {/* Tags */}
+              {tags && tags.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <TagIcon className="w-4 h-4 text-muted-foreground mt-0.5" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map((tag) => (
+                      <Badge 
+                        key={tag?.id} 
+                        style={{ 
+                          backgroundColor: tag?.cor ? `${tag.cor}20` : '#3B82F620', 
+                          color: tag?.cor || '#3B82F6'
+                        }}
+                        className="text-xs border-0"
+                      >
+                        {tag?.nome}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="telefone">Telefone</Label>
-                  <Input
-                    id="telefone"
-                    value={formData.telefone}
-                    onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
+              <Separator />
 
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="w-full"
-                >
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  <Save className="mr-2 h-4 w-4" />
-                  Salvar Alterações
-                </Button>
+              {/* Informações adicionais - Apenas leitura */}
+              <div className="space-y-2">
+                {cliente?.telefone && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Telefone:</span>
+                    <span className="font-medium">{cliente.telefone}</span>
+                  </div>
+                )}
+
+                {cliente?.ltv && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">LTV:</span>
+                    <span className="font-medium">R$ {parseFloat(cliente.ltv).toFixed(2)}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
