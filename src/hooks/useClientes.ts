@@ -1,14 +1,16 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export const useClientes = () => {
+const PAGE_SIZE = 20;
+
+export const useClientes = (termoBusca?: string) => {
   const { user } = useAuth();
 
-  return useQuery({
-    queryKey: ['clientes', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
+  return useInfiniteQuery({
+    queryKey: ['clientes', user?.id, termoBusca],
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!user?.id) return { data: [], nextPage: undefined };
 
       // Buscar a role do usuário
       const { data: userRole } = await supabase
@@ -22,24 +24,60 @@ export const useClientes = () => {
         .select(`
           *,
           fichas (codigo_ficha)
-        `);
+        `, { count: 'exact' });
 
       // Apenas vendedores filtram por vendedor_id
-      // Gestores, masters, admins e usuários da unidade "Todas" veem todos
       if (userRole?.role === 'vendedor') {
         query = query.eq('vendedor_id', user.id);
       }
-      // Para franqueados, a política RLS já cuida do filtro por unidade
 
-      query = query.order('created_at', { ascending: false });
+      // Filtrar por termo de busca se fornecido
+      if (termoBusca && termoBusca.trim()) {
+        const termo = `%${termoBusca.trim()}%`;
+        const termoSemFormatacao = termoBusca.replace(/\D/g, '');
+        
+        // Primeiro buscar fichas que correspondem ao termo
+        const { data: fichasEncontradas } = await supabase
+          .from('fichas')
+          .select('cliente_id')
+          .ilike('codigo_ficha', termo);
+        
+        const clienteIdsDasFichas = fichasEncontradas?.map(f => f.cliente_id).filter(Boolean) || [];
+        
+        // Buscar por nome, telefone ou IDs dos clientes com fichas correspondentes
+        if (clienteIdsDasFichas.length > 0) {
+          if (termoSemFormatacao) {
+            query = query.or(`nome.ilike.${termo},telefone.ilike.%${termoSemFormatacao}%,id.in.(${clienteIdsDasFichas.join(',')})`);
+          } else {
+            query = query.or(`nome.ilike.${termo},id.in.(${clienteIdsDasFichas.join(',')})`);
+          }
+        } else {
+          // Se não encontrou fichas, buscar apenas por nome e telefone
+          if (termoSemFormatacao) {
+            query = query.or(`nome.ilike.${termo},telefone.ilike.%${termoSemFormatacao}%`);
+          } else {
+            query = query.ilike('nome', termo);
+          }
+        }
+      }
+
+      query = query
+        .order('created_at', { ascending: false })
+        .range(pageParam * PAGE_SIZE, (pageParam + 1) * PAGE_SIZE - 1);
       
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       
       if (error) throw error;
-      return data || [];
+      
+      const hasMore = count ? (pageParam + 1) * PAGE_SIZE < count : false;
+      
+      return {
+        data: data || [],
+        nextPage: hasMore ? pageParam + 1 : undefined,
+      };
     },
+    getNextPageParam: (lastPage) => lastPage.nextPage,
     enabled: !!user?.id,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    initialPageParam: 0,
   });
 };

@@ -18,6 +18,7 @@ export default function ClienteDetalhes() {
   const [cliente, setCliente] = useState<any>(null);
   const [fichas, setFichas] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
+  const [ltvTotal, setLtvTotal] = useState<number>(0);
 
   useEffect(() => {
     const loadClienteData = async () => {
@@ -68,6 +69,14 @@ export default function ClienteDetalhes() {
 
         if (tagsError) throw tagsError;
         setTags(tagsData?.map((r: any) => r.tags).filter(Boolean) || []);
+
+        // Calcular LTV total (LTV da tabela clientes + soma dos valores das fichas)
+        const ltvCliente = clienteData.ltv || 0;
+        const somaFichas = (fichasData || []).reduce((acc, ficha) => {
+          const valor = ficha.valor ? parseFloat(ficha.valor) : 0;
+          return acc + valor;
+        }, 0);
+        setLtvTotal(ltvCliente + somaFichas);
       } catch (error) {
         console.error("Erro ao carregar dados do cliente:", error);
       } finally {
@@ -185,11 +194,11 @@ export default function ClienteDetalhes() {
                   </div>
                 )}
 
-                {cliente?.ltv && (
+                {ltvTotal > 0 && (
                   <div className="flex items-center gap-2 text-sm">
                     <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">LTV:</span>
-                    <span className="font-medium">R$ {parseFloat(cliente.ltv).toFixed(2)}</span>
+                    <span className="text-muted-foreground">LTV Total:</span>
+                    <span className="font-medium">R$ {ltvTotal.toFixed(2)}</span>
                   </div>
                 )}
               </div>
