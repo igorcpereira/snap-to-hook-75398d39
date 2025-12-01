@@ -4,11 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const PAGE_SIZE = 20;
 
-export const useClientes = () => {
+export const useClientes = (termoBusca?: string) => {
   const { user } = useAuth();
 
   return useInfiniteQuery({
-    queryKey: ['clientes', user?.id],
+    queryKey: ['clientes', user?.id, termoBusca],
     queryFn: async ({ pageParam = 0 }) => {
       if (!user?.id) return { data: [], nextPage: undefined };
 
@@ -29,6 +29,14 @@ export const useClientes = () => {
       // Apenas vendedores filtram por vendedor_id
       if (userRole?.role === 'vendedor') {
         query = query.eq('vendedor_id', user.id);
+      }
+
+      // Filtrar por termo de busca se fornecido
+      if (termoBusca && termoBusca.trim()) {
+        const termo = `%${termoBusca.trim()}%`;
+        const termoSemFormatacao = termoBusca.replace(/\D/g, '');
+        
+        query = query.or(`nome.ilike.${termo},telefone.ilike.%${termoSemFormatacao}%,fichas.codigo_ficha.ilike.${termo}`);
       }
 
       query = query

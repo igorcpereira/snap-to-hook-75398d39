@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
@@ -11,14 +11,25 @@ import { formatarTelefone } from "@/lib/utils";
 
 const Clients = () => {
   const navigate = useNavigate();
+  const [termoBusca, setTermoBusca] = useState("");
+  const [termoBuscaDebounced, setTermoBuscaDebounced] = useState("");
+  
+  // Debounce do termo de busca
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTermoBuscaDebounced(termoBusca);
+    }, 400);
+    
+    return () => clearTimeout(timer);
+  }, [termoBusca]);
+  
   const { 
     data, 
     isLoading: loading, 
     fetchNextPage, 
     hasNextPage, 
     isFetchingNextPage 
-  } = useClientes();
-  const [termoBusca, setTermoBusca] = useState("");
+  } = useClientes(termoBuscaDebounced);
   
   const observer = useRef<IntersectionObserver>();
   const lastClientRef = useCallback((node: HTMLDivElement) => {
@@ -42,29 +53,6 @@ const Clients = () => {
   const clientes = useMemo(() => {
     return data?.pages.flatMap(page => page.data) || [];
   }, [data]);
-
-  // Filtrar clientes por nome, telefone ou ficha
-  const clientesFiltrados = useMemo(() => {
-    const termo = termoBusca.toLowerCase().trim();
-    
-    if (!termo) return clientes;
-    
-    return clientes.filter(cliente => {
-      // Buscar no nome
-      const nomeMatch = cliente.nome?.toLowerCase().includes(termo) || false;
-      
-      // Buscar no telefone (remover formatação)
-      const telefoneRaw = cliente.telefone?.replace(/\D/g, '') || '';
-      const telefoneMatch = telefoneRaw.includes(termo.replace(/\D/g, ''));
-      
-      // Buscar nos códigos das fichas
-      const fichasMatch = (cliente as any).fichas?.some((ficha: any) => 
-        ficha.codigo_ficha?.toString().toLowerCase().includes(termo)
-      ) || false;
-      
-      return nomeMatch || telefoneMatch || fichasMatch;
-    });
-  }, [clientes, termoBusca]);
 
   return (
     <div className="min-h-screen bg-background pb-20 relative">
@@ -110,8 +98,8 @@ const Clients = () => {
               />
             </div>
 
-            {/* Lista de clientes filtrados */}
-            {clientesFiltrados.length === 0 ? (
+            {/* Lista de clientes */}
+            {clientes.length === 0 ? (
               <div className="bg-card rounded-2xl p-12 text-center shadow-sm">
                 <p className="text-muted-foreground text-sm">
                   Nenhum resultado encontrado.
@@ -119,8 +107,8 @@ const Clients = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {clientesFiltrados.map((cliente, index) => {
-                  const isLast = index === clientesFiltrados.length - 1;
+                {clientes.map((cliente, index) => {
+                  const isLast = index === clientes.length - 1;
                   
                   return (
                     <Card 
