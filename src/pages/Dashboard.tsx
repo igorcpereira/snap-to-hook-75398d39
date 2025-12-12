@@ -45,14 +45,14 @@ const Dashboard = () => {
         />
       </div>
 
-      <main className="px-4 py-6 max-w-md mx-auto space-y-6 relative z-10">
+      <main className="px-4 py-4 max-w-sm mx-auto space-y-4 relative z-10">
         {/* Welcome Section */}
-        <div className="bg-card rounded-2xl p-6 shadow-sm">
-          <h2 className="text-2xl font-bold text-foreground mb-2">
-            Bem-vindo(a), {nomeVendedor}!
+        <div className="bg-card rounded-xl p-4 shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground mb-1">
+            Olá, {nomeVendedor}!
           </h2>
-          <p className="text-muted-foreground">
-            Pronto para começar um novo atendimento?
+          <p className="text-sm text-muted-foreground">
+            Pronto para um novo atendimento?
           </p>
         </div>
 
