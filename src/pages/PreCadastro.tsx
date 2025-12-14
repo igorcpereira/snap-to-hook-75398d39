@@ -65,12 +65,28 @@ const PreCadastro = () => {
           supabase
         } = await import("@/integrations/supabase/client");
         const user = (await supabase.auth.getUser()).data.user;
-        const {
-          data,
-          error
-        } = await supabase.from('fichas').select('*').eq('vendedor_id', user?.id).in('status', ['pendente', 'erro']).order('created_at', {
-          ascending: false
-        }).range(0, 99); // Paginação: primeiras 100 fichas
+        
+        // Buscar a role do usuário
+        const { data: userRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+        
+        let query = supabase
+          .from('fichas')
+          .select('*')
+          .in('status', ['pendente', 'erro'])
+          .order('created_at', { ascending: false })
+          .range(0, 99);
+        
+        // Apenas vendedores filtram por vendedor_id
+        // Master, admin e gestor veem todas as fichas
+        if (userRole?.role === 'vendedor') {
+          query = query.eq('vendedor_id', user?.id);
+        }
+        
+        const { data, error } = await query;
         if (error) {
           console.error('Erro ao buscar pré-cadastros:', error);
           return;
@@ -109,14 +125,28 @@ const PreCadastro = () => {
           supabase
         } = await import("@/integrations/supabase/client");
         const user = (await supabase.auth.getUser()).data.user;
-
-        // Configura realtime para receber updates APENAS das fichas do vendedor
-        const channel = supabase.channel('fichas_changes').on('postgres_changes', {
+        
+        // Buscar a role do usuário
+        const { data: userRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user?.id)
+          .maybeSingle();
+        
+        // Configura realtime - apenas vendedores filtram por vendedor_id
+        const channelConfig: any = {
           event: '*',
           schema: 'public',
           table: 'fichas',
-          filter: `vendedor_id=eq.${user?.id}` // Filtro para reduzir carga
-        }, payload => {
+        };
+        
+        // Apenas vendedores filtram por vendedor_id no realtime
+        if (userRole?.role === 'vendedor') {
+          channelConfig.filter = `vendedor_id=eq.${user?.id}`;
+        }
+
+        // Configura realtime para receber updates
+        const channel = supabase.channel('fichas_changes').on('postgres_changes', channelConfig, (payload: any) => {
           if (!mounted) return;
           console.log('Realtime update:', payload);
           if (payload.eventType === 'INSERT') {
