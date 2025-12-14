@@ -11,11 +11,23 @@ export const useFichas = (limit?: number) => {
     queryFn: async () => {
       if (!user?.id) return [];
 
+      // Buscar a role do usuário
+      const { data: userRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       let query = supabase
         .from('fichas')
         .select('*')
-        .eq('vendedor_id', user.id)
         .order('created_at', { ascending: false });
+
+      // Apenas vendedores e franqueados filtram por vendedor_id
+      // Master, admin e gestor veem todas as fichas
+      if (userRole?.role === 'vendedor') {
+        query = query.eq('vendedor_id', user.id);
+      }
 
       if (limit) {
         query = query.range(0, limit - 1);

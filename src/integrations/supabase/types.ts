@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      campanhas: {
+        Row: {
+          created_at: string
+          criado_por: string | null
+          data_agendamento: string | null
+          enviadas: number | null
+          filtros: Json | null
+          id: string
+          mensagem: string | null
+          nome: string
+          publico_estimado: number | null
+          status: Database["public"]["Enums"]["status_campanha"]
+          unidade_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criado_por?: string | null
+          data_agendamento?: string | null
+          enviadas?: number | null
+          filtros?: Json | null
+          id?: string
+          mensagem?: string | null
+          nome: string
+          publico_estimado?: number | null
+          status?: Database["public"]["Enums"]["status_campanha"]
+          unidade_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string | null
+          data_agendamento?: string | null
+          enviadas?: number | null
+          filtros?: Json | null
+          id?: string
+          mensagem?: string | null
+          nome?: string
+          publico_estimado?: number | null
+          status?: Database["public"]["Enums"]["status_campanha"]
+          unidade_id?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campanhas_unidade_id_fkey"
+            columns: ["unidade_id"]
+            isOneToOne: false
+            referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           created_at: string
@@ -580,6 +633,13 @@ export type Database = {
         | "master"
         | "admin"
         | "suporte"
+      status_campanha:
+        | "rascunho"
+        | "agendada"
+        | "em_andamento"
+        | "pausada"
+        | "concluida"
+        | "cancelada"
       status_ficha: "erro" | "pendente" | "ativa" | "baixa"
       tipo_de_atendimento: "Aluguel" | "Venda" | "Ajuste"
       user_role: "Gestor" | "Franqueado" | "Vendedor"
@@ -717,6 +777,14 @@ export const Constants = {
         "master",
         "admin",
         "suporte",
+      ],
+      status_campanha: [
+        "rascunho",
+        "agendada",
+        "em_andamento",
+        "pausada",
+        "concluida",
+        "cancelada",
       ],
       status_ficha: ["erro", "pendente", "ativa", "baixa"],
       tipo_de_atendimento: ["Aluguel", "Venda", "Ajuste"],
