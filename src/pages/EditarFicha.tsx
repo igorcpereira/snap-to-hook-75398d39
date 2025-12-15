@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, Image as ImageIcon, X, User, Check, CloudOff } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, X, User, Check, CloudOff, Sparkles } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,7 @@ export default function EditarFicha() {
   const [wasProcessed, setWasProcessed] = useState(false);
   const [isAudioRecording, setIsAudioRecording] = useState(false);
   const [isAudioProcessing, setIsAudioProcessing] = useState(false);
+  const [sugerindoTags, setSugerindoTags] = useState(false);
   
   // Auto-save states
   const [savingStatus, setSavingStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -273,6 +274,45 @@ export default function EditarFicha() {
       ...formData,
       tags: formData.tags.filter(tag => tag !== tagToRemove)
     });
+  };
+
+  const handleSugerirTags = async () => {
+    if (!formData.observacoes_cliente?.trim()) {
+      toast({
+        title: "Digite alguma observação primeiro",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSugerindoTags(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sugerir-tags-texto', {
+        body: { texto: formData.observacoes_cliente }
+      });
+
+      if (error) throw error;
+
+      if (data?.tags?.length > 0) {
+        handleTagsExtracted(data.tags);
+        toast({
+          title: `${data.tags.length} tag(s) sugerida(s)!`,
+        });
+      } else {
+        toast({
+          title: "Nenhuma tag identificada",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao sugerir tags:', error);
+      toast({
+        title: "Erro ao sugerir tags",
+        variant: "destructive"
+      });
+    } finally {
+      setSugerindoTags(false);
+    }
   };
 
   // Auto-save function - salva sem validações, mantém status atual
@@ -714,6 +754,21 @@ export default function EditarFicha() {
                 placeholder="Observações gerais sobre o atendimento..."
                 className="min-h-[100px]"
               />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSugerirTags}
+                disabled={sugerindoTags || !formData.observacoes_cliente?.trim()}
+                className="mt-2"
+              >
+                {sugerindoTags ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2" />
+                )}
+                Sugerir Tags
+              </Button>
             </div>
 
             <Separator />
