@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, Image as ImageIcon, X, User } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, X, User, Check, CloudOff, Sparkles } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,15 @@ export default function EditarFicha() {
   const [wasProcessed, setWasProcessed] = useState(false);
   const [isAudioRecording, setIsAudioRecording] = useState(false);
   const [isAudioProcessing, setIsAudioProcessing] = useState(false);
+  const [sugerindoTags, setSugerindoTags] = useState(false);
+  
+  // Auto-save states
+  const [savingStatus, setSavingStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const isInitialLoad = useRef(true);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isAutoSaving = useRef(false);
+  const codigoFichaRef = useRef<string | null>(null);
+  const wasProcessedRef = useRef(false);
   const [formData, setFormData] = useState({
     nome_cliente: "",
     telefone_cliente: "",
@@ -159,6 +168,11 @@ export default function EditarFicha() {
     loadFicha();
   }, [id, navigate, user?.id, isNewFicha]);
 
+  // Sincronizar ref com formData.codigo_ficha
+  useEffect(() => {
+    codigoFichaRef.current = formData.codigo_ficha || null;
+  }, [formData.codigo_ficha]);
+
   // Subscrição Realtime para updates da ficha
   useEffect(() => {
     if (!id) return;
@@ -183,16 +197,27 @@ export default function EditarFicha() {
             console.log('🔒 Update bloqueado: áudio em uso');
             return;
           }
+
+          // Ignorar detecção de processamento durante auto-save
+          if (isAutoSaving.current) {
+            console.log('🔒 Ignorando detecção - foi auto-save');
+          }
           
           const fichaAtualizada = payload.new;
-          const codigoAnterior = ficha?.codigo_ficha; // Valor anterior
-          const codigoNovo = fichaAtualizada.codigo_ficha; // Valor novo
+          const codigoAnterior = codigoFichaRef.current; // Usar ref em vez de state
+          const codigoNovo = fichaAtualizada.codigo_ficha;
           
-          // Detectar processamento concluído: codigo_ficha mudou de null/undefined para um valor
-          if (!codigoAnterior && codigoNovo) {
+          // Detectar processamento concluído apenas se:
+          // 1. Não foi auto-save
+          // 2. Código anterior era null/vazio
+          // 3. Código novo existe
+          // 4. Ainda não foi marcado como processado
+          if (!isAutoSaving.current && !codigoAnterior && codigoNovo && !wasProcessedRef.current) {
             console.log('✅ Processamento detectado: codigo_ficha preenchido');
             setIsProcessing(false);
             setWasProcessed(true);
+            wasProcessedRef.current = true;
+            codigoFichaRef.current = codigoNovo; // Atualizar ref imediatamente
             
             // Remove a mensagem de sucesso após 5 segundos
             setTimeout(() => {
@@ -210,9 +235,9 @@ export default function EditarFicha() {
             codigo_ficha: fichaAtualizada.codigo_ficha || prev.codigo_ficha,
             tipo: fichaAtualizada.tipo || prev.tipo,
             status: fichaAtualizada.status || prev.status,
-            data_retirada: fichaAtualizada.data_retirada ? new Date(fichaAtualizada.data_retirada) : prev.data_retirada,
-            data_devolucao: fichaAtualizada.data_devolucao ? new Date(fichaAtualizada.data_devolucao) : prev.data_devolucao,
-            data_festa: fichaAtualizada.data_festa ? new Date(fichaAtualizada.data_festa) : prev.data_festa,
+            data_retirada: fichaAtualizada.data_retirada ? parseDataSemFuso(fichaAtualizada.data_retirada) : prev.data_retirada,
+            data_devolucao: fichaAtualizada.data_devolucao ? parseDataSemFuso(fichaAtualizada.data_devolucao) : prev.data_devolucao,
+            data_festa: fichaAtualizada.data_festa ? parseDataSemFuso(fichaAtualizada.data_festa) : prev.data_festa,
             valor: fichaAtualizada.valor?.toString() || prev.valor,
             garantia: fichaAtualizada.garantia?.toString() || prev.garantia,
             paleto: fichaAtualizada.paleto || prev.paleto,
@@ -269,6 +294,140 @@ export default function EditarFicha() {
       tags: formData.tags.filter(tag => tag !== tagToRemove)
     });
   };
+
+  const handleSugerirTags = async () => {
+    if (!formData.observacoes_cliente?.trim()) {
+      toast({
+        title: "Digite alguma observação primeiro",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSugerindoTags(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sugerir-tags-texto', {
+        body: { texto: formData.observacoes_cliente }
+      });
+
+      if (error) throw error;
+
+      if (data?.tags?.length > 0) {
+        handleTagsExtracted(data.tags);
+        toast({
+          title: `${data.tags.length} tag(s) sugerida(s)!`,
+        });
+      } else {
+        toast({
+          title: "Nenhuma tag identificada",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao sugerir tags:', error);
+      toast({
+        title: "Erro ao sugerir tags",
+        variant: "destructive"
+      });
+    } finally {
+      setSugerindoTags(false);
+    }
+  };
+
+  // Auto-save function - salva sem validações, mantém status atual
+  const autoSave = useCallback(async () => {
+    if (!id || isInitialLoad.current) return;
+    
+    console.log('💾 Auto-save iniciado...');
+    setSavingStatus('saving');
+    isAutoSaving.current = true;
+    
+    try {
+      const updateData: any = {
+        nome_cliente: formData.nome_cliente || null,
+        telefone_cliente: formData.telefone_cliente || null,
+        codigo_ficha: formData.codigo_ficha || null,
+        tipo: formData.tipo || null,
+        vendedor_responsavel: formData.vendedor_responsavel || null,
+        data_retirada: formatarDataParaBanco(formData.data_retirada),
+        data_devolucao: formatarDataParaBanco(formData.data_devolucao),
+        data_festa: formatarDataParaBanco(formData.data_festa),
+        valor: formData.valor ? formData.valor.toString() : null,
+        garantia: formData.garantia ? formData.garantia.toString() : null,
+        paleto: formData.paleto || null,
+        calca: formData.calca || null,
+        camisa: formData.camisa || null,
+        sapato: formData.sapato || null,
+        pago: formData.pago,
+        transcricao_audio: formData.observacoes_cliente || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from("fichas")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
+      
+      console.log('✅ Auto-save concluído');
+      setSavingStatus('saved');
+      
+      // Limpa o status após 2 segundos
+      setTimeout(() => {
+        setSavingStatus('idle');
+      }, 2000);
+    } catch (error) {
+      console.error('❌ Erro no auto-save:', error);
+      setSavingStatus('error');
+      
+      setTimeout(() => {
+        setSavingStatus('idle');
+      }, 3000);
+    } finally {
+      // Delay para garantir que o realtime não capture como processamento
+      setTimeout(() => {
+        isAutoSaving.current = false;
+      }, 500);
+    }
+  }, [id, formData]);
+
+  // useEffect para auto-save com debounce
+  useEffect(() => {
+    // Ignora a primeira renderização (carga inicial)
+    if (isInitialLoad.current) {
+      return;
+    }
+    
+    // Limpa timeout anterior
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Define novo timeout de 5 segundos
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSave();
+    }, 5000);
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [formData, autoSave]);
+
+  // Marca que carregamento inicial foi concluído
+  useEffect(() => {
+    if (!isLoadingFicha && ficha) {
+      // Pequeno delay para garantir que formData foi populado
+      const timeout = setTimeout(() => {
+        isInitialLoad.current = false;
+        console.log('🟢 Auto-save ativado');
+      }, 500);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoadingFicha, ficha]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -513,6 +672,28 @@ export default function EditarFicha() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-xl font-semibold">Editar Ficha</h1>
+            
+            {/* Indicador de Auto-save */}
+            <div className="ml-auto flex items-center gap-1.5 text-xs">
+              {savingStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  <span className="text-muted-foreground">Salvando...</span>
+                </>
+              )}
+              {savingStatus === 'saved' && (
+                <>
+                  <Check className="h-3 w-3 text-green-600" />
+                  <span className="text-green-600">Salvo</span>
+                </>
+              )}
+              {savingStatus === 'error' && (
+                <>
+                  <CloudOff className="h-3 w-3 text-destructive" />
+                  <span className="text-destructive">Erro ao salvar</span>
+                </>
+              )}
+            </div>
           </div>
 
           {isProcessing && (
@@ -598,6 +779,21 @@ export default function EditarFicha() {
                 placeholder="Observações gerais sobre o atendimento..."
                 className="min-h-[100px]"
               />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSugerirTags}
+                disabled={sugerindoTags || !formData.observacoes_cliente?.trim()}
+                className="mt-2"
+              >
+                {sugerindoTags ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2" />
+                )}
+                Sugerir Tags
+              </Button>
             </div>
 
             <Separator />

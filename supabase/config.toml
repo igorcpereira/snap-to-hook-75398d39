@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.popular-tags-clientes]
 verify_jwt = false
+
+[functions.sugerir-tags-texto]
+verify_jwt = false
