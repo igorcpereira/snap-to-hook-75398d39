@@ -49,6 +49,9 @@ export default function EditarFicha() {
   const [savingStatus, setSavingStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const isInitialLoad = useRef(true);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isAutoSaving = useRef(false);
+  const codigoFichaRef = useRef<string | null>(null);
+  const wasProcessedRef = useRef(false);
   const [formData, setFormData] = useState({
     nome_cliente: "",
     telefone_cliente: "",
@@ -165,6 +168,11 @@ export default function EditarFicha() {
     loadFicha();
   }, [id, navigate, user?.id, isNewFicha]);
 
+  // Sincronizar ref com formData.codigo_ficha
+  useEffect(() => {
+    codigoFichaRef.current = formData.codigo_ficha || null;
+  }, [formData.codigo_ficha]);
+
   // Subscrição Realtime para updates da ficha
   useEffect(() => {
     if (!id) return;
@@ -189,16 +197,27 @@ export default function EditarFicha() {
             console.log('🔒 Update bloqueado: áudio em uso');
             return;
           }
+
+          // Ignorar detecção de processamento durante auto-save
+          if (isAutoSaving.current) {
+            console.log('🔒 Ignorando detecção - foi auto-save');
+          }
           
           const fichaAtualizada = payload.new;
-          const codigoAnterior = ficha?.codigo_ficha; // Valor anterior
-          const codigoNovo = fichaAtualizada.codigo_ficha; // Valor novo
+          const codigoAnterior = codigoFichaRef.current; // Usar ref em vez de state
+          const codigoNovo = fichaAtualizada.codigo_ficha;
           
-          // Detectar processamento concluído: codigo_ficha mudou de null/undefined para um valor
-          if (!codigoAnterior && codigoNovo) {
+          // Detectar processamento concluído apenas se:
+          // 1. Não foi auto-save
+          // 2. Código anterior era null/vazio
+          // 3. Código novo existe
+          // 4. Ainda não foi marcado como processado
+          if (!isAutoSaving.current && !codigoAnterior && codigoNovo && !wasProcessedRef.current) {
             console.log('✅ Processamento detectado: codigo_ficha preenchido');
             setIsProcessing(false);
             setWasProcessed(true);
+            wasProcessedRef.current = true;
+            codigoFichaRef.current = codigoNovo; // Atualizar ref imediatamente
             
             // Remove a mensagem de sucesso após 5 segundos
             setTimeout(() => {
@@ -321,6 +340,7 @@ export default function EditarFicha() {
     
     console.log('💾 Auto-save iniciado...');
     setSavingStatus('saving');
+    isAutoSaving.current = true;
     
     try {
       const updateData: any = {
@@ -364,6 +384,11 @@ export default function EditarFicha() {
       setTimeout(() => {
         setSavingStatus('idle');
       }, 3000);
+    } finally {
+      // Delay para garantir que o realtime não capture como processamento
+      setTimeout(() => {
+        isAutoSaving.current = false;
+      }, 500);
     }
   }, [id, formData]);
 
