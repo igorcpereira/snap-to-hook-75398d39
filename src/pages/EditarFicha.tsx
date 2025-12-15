@@ -404,10 +404,10 @@ export default function EditarFicha() {
       clearTimeout(autoSaveTimeoutRef.current);
     }
     
-    // Define novo timeout de 1.5 segundos
+    // Define novo timeout de 5 segundos
     autoSaveTimeoutRef.current = setTimeout(() => {
       autoSave();
-    }, 1500);
+    }, 5000);
     
     return () => {
       if (autoSaveTimeoutRef.current) {
