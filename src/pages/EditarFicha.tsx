@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, Image as ImageIcon, X, User } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, X, User, Check, CloudOff } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,11 @@ export default function EditarFicha() {
   const [wasProcessed, setWasProcessed] = useState(false);
   const [isAudioRecording, setIsAudioRecording] = useState(false);
   const [isAudioProcessing, setIsAudioProcessing] = useState(false);
+  
+  // Auto-save states
+  const [savingStatus, setSavingStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const isInitialLoad = useRef(true);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [formData, setFormData] = useState({
     nome_cliente: "",
     telefone_cliente: "",
@@ -269,6 +274,95 @@ export default function EditarFicha() {
       tags: formData.tags.filter(tag => tag !== tagToRemove)
     });
   };
+
+  // Auto-save function - salva sem validações, mantém status atual
+  const autoSave = useCallback(async () => {
+    if (!id || isInitialLoad.current) return;
+    
+    console.log('💾 Auto-save iniciado...');
+    setSavingStatus('saving');
+    
+    try {
+      const updateData: any = {
+        nome_cliente: formData.nome_cliente || null,
+        telefone_cliente: formData.telefone_cliente || null,
+        codigo_ficha: formData.codigo_ficha || null,
+        tipo: formData.tipo || null,
+        vendedor_responsavel: formData.vendedor_responsavel || null,
+        data_retirada: formatarDataParaBanco(formData.data_retirada),
+        data_devolucao: formatarDataParaBanco(formData.data_devolucao),
+        data_festa: formatarDataParaBanco(formData.data_festa),
+        valor: formData.valor ? formData.valor.toString() : null,
+        garantia: formData.garantia ? formData.garantia.toString() : null,
+        paleto: formData.paleto || null,
+        calca: formData.calca || null,
+        camisa: formData.camisa || null,
+        sapato: formData.sapato || null,
+        pago: formData.pago,
+        transcricao_audio: formData.observacoes_cliente || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from("fichas")
+        .update(updateData)
+        .eq("id", id);
+
+      if (error) throw error;
+      
+      console.log('✅ Auto-save concluído');
+      setSavingStatus('saved');
+      
+      // Limpa o status após 2 segundos
+      setTimeout(() => {
+        setSavingStatus('idle');
+      }, 2000);
+    } catch (error) {
+      console.error('❌ Erro no auto-save:', error);
+      setSavingStatus('error');
+      
+      setTimeout(() => {
+        setSavingStatus('idle');
+      }, 3000);
+    }
+  }, [id, formData]);
+
+  // useEffect para auto-save com debounce
+  useEffect(() => {
+    // Ignora a primeira renderização (carga inicial)
+    if (isInitialLoad.current) {
+      return;
+    }
+    
+    // Limpa timeout anterior
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Define novo timeout de 1.5 segundos
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSave();
+    }, 1500);
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [formData, autoSave]);
+
+  // Marca que carregamento inicial foi concluído
+  useEffect(() => {
+    if (!isLoadingFicha && ficha) {
+      // Pequeno delay para garantir que formData foi populado
+      const timeout = setTimeout(() => {
+        isInitialLoad.current = false;
+        console.log('🟢 Auto-save ativado');
+      }, 500);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoadingFicha, ficha]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -513,6 +607,28 @@ export default function EditarFicha() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-xl font-semibold">Editar Ficha</h1>
+            
+            {/* Indicador de Auto-save */}
+            <div className="ml-auto flex items-center gap-1.5 text-xs">
+              {savingStatus === 'saving' && (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  <span className="text-muted-foreground">Salvando...</span>
+                </>
+              )}
+              {savingStatus === 'saved' && (
+                <>
+                  <Check className="h-3 w-3 text-green-600" />
+                  <span className="text-green-600">Salvo</span>
+                </>
+              )}
+              {savingStatus === 'error' && (
+                <>
+                  <CloudOff className="h-3 w-3 text-destructive" />
+                  <span className="text-destructive">Erro ao salvar</span>
+                </>
+              )}
+            </div>
           </div>
 
           {isProcessing && (
