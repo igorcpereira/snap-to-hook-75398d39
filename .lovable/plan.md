@@ -1,64 +1,50 @@
 
 
-## Corrigir Validacao de Ficha Duplicada
+## Adicionar botao de editar nome e telefone do cliente
 
 ### O que muda
-Quando o usuario clica em "Salvar" e o codigo da ficha ja existe em outra ficha no sistema, em vez de simplesmente bloquear o save, vamos mostrar um **dialog de aviso** com:
-- Mensagem informando que a ficha ja foi lancada anteriormente
-- A **data** em que foi lancada
-- Dois botoes: **"Salvar mesmo assim"** (permite duplicacao) e **"Descartar"** (deleta a ficha pendente atual e volta para a lista)
+Na pagina de detalhes do cliente (`ClienteDetalhes.tsx`), vamos adicionar um botao de edicao (icone de lapis) ao lado do nome do cliente. Ao clicar, abre um **Dialog** inline onde o usuario pode editar o **nome** e o **telefone**, salvar e ver a atualizacao imediatamente.
 
-### Detalhes Tecnicos
+### Alteracoes no arquivo `src/pages/ClienteDetalhes.tsx`
 
-**Arquivo:** `src/pages/EditarFicha.tsx`
+1. **Novos imports**:
+   - `Pencil` do lucide-react
+   - `Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter` do shadcn/ui
+   - `Input` e `Label` dos componentes ui
+   - `useToast` para feedback
 
-1. **Importar AlertDialog** do shadcn/ui (AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel)
+2. **Novos states**:
+   - `editando` (boolean) - controla se o dialog esta aberto
+   - `editNome` (string) - valor do campo nome em edicao
+   - `editTelefone` (string) - valor do campo telefone em edicao
+   - `salvandoEdicao` (boolean) - loading do botao salvar
 
-2. **Novo state** para controlar o dialog:
-   ```text
-   const [fichaDuplicada, setFichaDuplicada] = useState<{ id: string; created_at: string } | null>(null);
-   ```
+3. **Funcao `handleSalvarEdicao`**:
+   - Faz UPDATE na tabela `clientes` com o novo nome e telefone
+   - Atualiza o state `cliente` localmente
+   - Mostra toast de sucesso
+   - Fecha o dialog
 
-3. **Alterar a query de verificacao** (linhas 446-451) para buscar tambem `created_at` alem de `id`:
-   ```text
-   .select('id, created_at')
-   ```
+4. **Botao de editar no JSX**:
+   - Icone de lapis ao lado do nome do cliente (linha 152)
+   - Ao clicar, preenche `editNome` e `editTelefone` com valores atuais e abre o dialog
 
-4. **Alterar o bloco de duplicata** (linhas 453-461): em vez de mostrar toast e retornar, setar `setFichaDuplicada(fichaExistente)` e retornar. Isso abre o dialog.
+5. **Dialog de edicao**:
+   - Titulo: "Editar Cliente"
+   - Campo Input para Nome
+   - Campo Input para Telefone
+   - Botoes "Cancelar" e "Salvar"
 
-5. **Nova funcao `handleDescartarFicha`**: deleta a ficha pendente atual do banco e navega de volta para `/pre-cadastro`
-
-6. **Nova funcao `handleSalvarMesmoAssim`**: fecha o dialog, pula a validacao de duplicata e executa o save normalmente (chama o restante do handleSave)
-
-7. **Adicionar o AlertDialog no JSX** com:
-   - Titulo: "Ficha ja lancada"
-   - Descricao: "Esta ficha (codigo X) ja foi lancada no sistema em DD/MM/YYYY. Deseja salvar novamente (pode gerar duplicacao) ou descartar este lancamento?"
-   - Botao "Descartar" (variant outline) - chama handleDescartarFicha
-   - Botao "Salvar mesmo assim" (variant default) - chama handleSalvarMesmoAssim
-
-### Refatoracao do handleSave
-
-O `handleSave` sera dividido em duas partes:
-- **Parte 1 (validacao)**: verifica codigo obrigatorio e duplicata. Se duplicata, abre dialog e para.
-- **Parte 2 (execucao)**: uma funcao `executeSave()` que faz todo o trabalho de salvar (cliente, ficha, tags, navegacao). Chamada tanto pelo handleSave normal quanto pelo "Salvar mesmo assim".
-
-Isso evita duplicar codigo entre o fluxo normal e o fluxo de "salvar mesmo assim".
-
-### Fluxo do usuario
+### Layout do card atualizado
 
 ```text
-Usuario clica Salvar
-       |
-  Codigo existe?
-   /         \
-  Nao         Sim
-   |            |
- Salva      Abre dialog com data
- normalmente   /          \
-          Descartar    Salvar mesmo assim
-              |              |
-         Deleta ficha    Salva normalmente
-         pendente e      (ignora duplicata)
-         volta para
-         lista
++------------------------------------+
+| Nome do Cliente          [icone ✏] |
+| Cliente desde: 01/01/2025          |
+| Tags: [tag1] [tag2]               |
+| ---------------------------------- |
+| Telefone: (44) 99999-9999         |
+| LTV Total: R$ 1.500,00            |
++------------------------------------+
 ```
+
