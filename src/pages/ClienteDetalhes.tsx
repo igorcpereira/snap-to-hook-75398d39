@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Phone, Calendar, DollarSign, Loader2, Tag as TagIcon, TrendingUp } from "lucide-react";
+import { ArrowLeft, Phone, Calendar, DollarSign, Loader2, Tag as TagIcon, TrendingUp, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Header from "@/components/Header";
@@ -14,11 +18,16 @@ import BottomNav from "@/components/BottomNav";
 export default function ClienteDetalhes() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [cliente, setCliente] = useState<any>(null);
   const [fichas, setFichas] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
   const [ltvTotal, setLtvTotal] = useState<number>(0);
+  const [editando, setEditando] = useState(false);
+  const [editNome, setEditNome] = useState("");
+  const [editTelefone, setEditTelefone] = useState("");
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   useEffect(() => {
     const loadClienteData = async () => {
@@ -115,6 +124,32 @@ export default function ClienteDetalhes() {
     }
   };
 
+  const handleAbrirEdicao = () => {
+    setEditNome(cliente?.nome || "");
+    setEditTelefone(cliente?.telefone || "");
+    setEditando(true);
+  };
+
+  const handleSalvarEdicao = async () => {
+    if (!id) return;
+    setSalvandoEdicao(true);
+    try {
+      const { error } = await supabase
+        .from('clientes')
+        .update({ nome: editNome, telefone: editTelefone })
+        .eq('id', id);
+      if (error) throw error;
+      setCliente((prev: any) => ({ ...prev, nome: editNome, telefone: editTelefone }));
+      toast({ title: "Cliente atualizado com sucesso!" });
+      setEditando(false);
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      toast({ title: "Erro ao salvar", description: "Tente novamente.", variant: "destructive" });
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -148,9 +183,14 @@ export default function ClienteDetalhes() {
           <Card className="mb-4">
             <CardContent className="p-4 space-y-3">
               {/* Nome do Cliente */}
-              <div>
+              <div className="flex items-center justify-between">
                 <h1 className="text-xl font-semibold">{cliente?.nome}</h1>
+                <Button variant="ghost" size="icon" onClick={handleAbrirEdicao}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
               </div>
+
+
 
               {/* Info básica */}
               <div className="flex items-center gap-2 text-sm">
@@ -345,6 +385,30 @@ export default function ClienteDetalhes() {
       </main>
 
       <BottomNav />
+
+      <Dialog open={editando} onOpenChange={setEditando}>
+        <DialogContent className="max-w-[90vw] rounded-lg">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="editNome">Nome</Label>
+              <Input id="editNome" value={editNome} onChange={(e) => setEditNome(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editTelefone">Telefone</Label>
+              <Input id="editTelefone" value={editTelefone} onChange={(e) => setEditTelefone(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter className="flex-row gap-2">
+            <Button variant="outline" onClick={() => setEditando(false)} className="flex-1">Cancelar</Button>
+            <Button onClick={handleSalvarEdicao} disabled={salvandoEdicao} className="flex-1">
+              {salvandoEdicao ? <Loader2 className="h-4 w-4 animate-spin" /> : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
