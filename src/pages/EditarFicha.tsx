@@ -23,6 +23,10 @@ import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { useVendedores } from "@/hooks/useVendedores";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -44,6 +48,7 @@ export default function EditarFicha() {
   const [isAudioRecording, setIsAudioRecording] = useState(false);
   const [isAudioProcessing, setIsAudioProcessing] = useState(false);
   const [sugerindoTags, setSugerindoTags] = useState(false);
+  const [fichaDuplicada, setFichaDuplicada] = useState<{ id: string; created_at: string } | null>(null);
   
   // Auto-save states
   const [savingStatus, setSavingStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -429,36 +434,13 @@ export default function EditarFicha() {
     }
   }, [isLoadingFicha, ficha]);
 
-  const handleSave = async () => {
+  const executeSave = async () => {
     setLoading(true);
+    // Cancelar auto-save pendente
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
     try {
-      // Validar codigo_ficha único
-      if (!formData.codigo_ficha) {
-        toast({
-          title: "Erro",
-          description: "Código da ficha é obrigatório",
-          variant: "destructive"
-        });
-        setLoading(false);
-        return;
-      }
-
-      const { data: fichaExistente } = await supabase
-        .from('fichas')
-        .select('id')
-        .eq('codigo_ficha', formData.codigo_ficha)
-        .neq('id', id)
-        .maybeSingle();
-
-      if (fichaExistente) {
-        toast({
-          title: "Erro",
-          description: "Este código de ficha já existe",
-          variant: "destructive"
-        });
-        setLoading(false);
-        return;
-      }
 
       let clienteId: string | null = null;
 
@@ -604,6 +586,9 @@ export default function EditarFicha() {
         }
       }
 
+      // Atualizar status local para evitar conflito com auto-save
+      setFormData(prev => ({ ...prev, status: 'ativa' }));
+
       if (cliente_id) {
         navigate(`/cliente/${cliente_id}`);
       } else {
@@ -613,6 +598,49 @@ export default function EditarFicha() {
       console.error("Erro ao atualizar ficha:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!formData.codigo_ficha) {
+      toast({
+        title: "Erro",
+        description: "Código da ficha é obrigatório",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Verificar duplicata
+    const { data: fichaExistente } = await supabase
+      .from('fichas')
+      .select('id, created_at')
+      .eq('codigo_ficha', formData.codigo_ficha)
+      .neq('id', id)
+      .maybeSingle();
+
+    if (fichaExistente) {
+      setFichaDuplicada(fichaExistente);
+      return;
+    }
+
+    await executeSave();
+  };
+
+  const handleSalvarMesmoAssim = async () => {
+    setFichaDuplicada(null);
+    await executeSave();
+  };
+
+  const handleDescartarFicha = async () => {
+    setFichaDuplicada(null);
+    try {
+      await supabase.from('fichas').delete().eq('id', id!);
+      toast({ title: "Ficha descartada" });
+      navigate("/pre-cadastro");
+    } catch (error) {
+      console.error("Erro ao descartar ficha:", error);
+      toast({ title: "Erro ao descartar", variant: "destructive" });
     }
   };
 
@@ -1144,6 +1172,28 @@ export default function EditarFicha() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de Ficha Duplicada */}
+      <AlertDialog open={!!fichaDuplicada} onOpenChange={(open) => !open && setFichaDuplicada(null)}>
+        <AlertDialogContent className="max-w-[90vw] rounded-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ficha já lançada</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ficha (código {formData.codigo_ficha}) já foi lançada no sistema em{" "}
+              {fichaDuplicada ? format(new Date(fichaDuplicada.created_at), "dd/MM/yyyy", { locale: ptBR }) : ""}.
+              {"\n\n"}Deseja salvar novamente (pode gerar duplicação) ou descartar este lançamento?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+            <AlertDialogCancel onClick={handleDescartarFicha}>
+              Descartar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSalvarMesmoAssim}>
+              Salvar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>
