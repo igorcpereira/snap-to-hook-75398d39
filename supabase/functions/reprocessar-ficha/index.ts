@@ -40,12 +40,23 @@ Deno.serve(async (req) => {
       throw new Error('Ficha não encontrada ou sem imagem')
     }
 
+    // Extrair path relativo da URL completa (se necessário)
+    let storagePath = ficha.url_bucket
+    const bucketPrefix = '/storage/v1/object/public/fichas/'
+    const prefixIndex = storagePath.indexOf(bucketPrefix)
+    if (prefixIndex !== -1) {
+      storagePath = storagePath.substring(prefixIndex + bucketPrefix.length)
+    }
+
+    console.log('Baixando imagem do path:', storagePath)
+
     // Baixar imagem do bucket
     const { data: fileData, error: downloadError } = await supabaseClient.storage
       .from('fichas')
-      .download(ficha.url_bucket)
+      .download(storagePath)
 
     if (downloadError || !fileData) {
+      console.error('Erro ao baixar:', downloadError)
       throw new Error('Erro ao baixar imagem do storage')
     }
 
