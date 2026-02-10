@@ -13,6 +13,7 @@ import Clients from "./pages/Clients";
 import ClienteDetalhes from "./pages/ClienteDetalhes";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
+import Logs from "./pages/Logs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -89,6 +90,7 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route path="/logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
