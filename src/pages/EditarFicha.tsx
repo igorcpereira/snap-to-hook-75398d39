@@ -520,6 +520,17 @@ export default function EditarFicha() {
 
       if (error) throw error;
 
+      // Log: salvamento_manual
+      try {
+        await supabase.from('log_processo_ficha' as any).insert({
+          ficha_id: id,
+          etapa: 'salvamento_manual',
+          detalhes: { status_final: novoStatus },
+        });
+      } catch (e) {
+        console.error('Erro ao registrar log:', e);
+      }
+
       supabase.functions.invoke('notificar-ficha-whatsapp', {
         body: { ficha_id: id }
       }).catch(err => {
