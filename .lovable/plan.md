@@ -1,82 +1,73 @@
 
 
-## Tabela de Log de Timestamps do Processo de Fichas
+## Reestruturar tabela `log_processo_ficha` para abordagem de coluna por etapa
 
-### O Fluxo Atual (do botao ate o salvamento)
+### Conceito
 
-```text
-1. Usuario clica "Tirar Foto" ou "Carregar Imagem" (NewRegistration.tsx)
-2. Seleciona/tira foto -> preview aparece
-3. Confirma envio -> chama Edge Function "processar-ficha"
-4. Edge Function:
-   a. Cria ficha no banco (status: pendente)
-   b. Upload da imagem no Storage
-   c. Retorna ficha_id imediatamente
-   d. Em background: envia para webhook externo
-5. App navega para EditarFicha com o ficha_id
-6. EditarFicha: escuta via Realtime as atualizacoes do webhook
-7. Webhook retorna dados -> ficha atualizada via Realtime
-8. Usuario confere/edita os campos
-9. Auto-save a cada 5 segundos (se houve mudanca)
-10. Usuario clica "Salvar" -> executeSave() -> status muda para "ativa"
-11. Notificacao WhatsApp enviada em background
-```
+Em vez de multiplas linhas por ficha, teremos **uma unica linha por ficha** onde cada coluna representa o timestamp de uma etapa do processo. Isso facilita calculos de latencia e permite que o webhook externo atualize colunas diretamente.
 
-### Nova tabela: `log_processo_ficha`
-
-Vamos criar uma tabela para registrar cada etapa do processo com timestamp preciso.
+### Nova estrutura da tabela
 
 | Coluna | Tipo | Descricao |
 |--------|------|-----------|
-| id | uuid (PK) | Identificador unico |
-| ficha_id | uuid | Referencia a ficha |
-| etapa | text | Nome da etapa (ex: "foto_capturada", "envio_edge_function", etc.) |
-| timestamp | timestamptz | Momento exato do evento |
-| detalhes | jsonb | Dados extras opcionais (ex: tempo de resposta do webhook) |
+| ficha_id | uuid (PK) | ID da ficha (chave primaria, sem auto-generate) |
+| edge_function_inicio | timestamptz | Edge Function recebeu a requisicao |
+| ficha_criada | timestamptz | Ficha inserida no banco |
+| upload_concluido | timestamptz | Imagem salva no Storage |
+| webhook_enviado | timestamptz | Requisicao enviada ao webhook externo |
+| webhook_extract | timestamptz | Webhook: extracao da imagem |
+| webhook_bucket | timestamptz | Webhook: processamento do bucket |
+| webhook_atualiza | timestamptz | Webhook: atualizacao de dados |
+| webhook_gpt | timestamptz | Webhook: chamada ao GPT |
+| webhook_parser_dados | timestamptz | Webhook: parsing dos dados extraidos |
+| webhook_return | timestamptz | Webhook: retorno preparado |
+| webhook_resposta | timestamptz | Edge Function recebeu resposta do webhook |
+| ficha_processada | timestamptz | Dados do webhook salvos na ficha |
 | created_at | timestamptz | Default now() |
-
-### Etapas que vamos registrar
-
-1. **foto_selecionada** - usuario selecionou/tirou a foto
-2. **envio_confirmado** - usuario confirmou o envio no dialog
-3. **edge_function_inicio** - Edge Function recebeu a requisicao
-4. **ficha_criada** - ficha inserida no banco
-5. **upload_concluido** - imagem salva no Storage
-6. **webhook_enviado** - requisicao enviada ao webhook externo
-7. **webhook_resposta** - resposta recebida do webhook
-8. **ficha_processada** - dados do webhook salvos na ficha
-9. **salvamento_manual** - usuario clicou "Salvar" (executeSave)
 
 ### Alteracoes necessarias
 
-**1. Migration SQL** - Criar tabela `log_processo_ficha` com RLS
+**1. Migration SQL**
+- Dropar a tabela `log_processo_ficha` atual (que usa o modelo multi-linha)
+- Criar nova tabela com a estrutura acima, usando `ficha_id` como PK
+- RLS: INSERT e UPDATE para autenticados, SELECT para gestores/admins
+- Politica de UPDATE necessaria (antes nao tinha) pois agora o webhook externo precisa atualizar colunas
 
-**2. `src/pages/NewRegistration.tsx`** - Inserir logs nas etapas:
-- `foto_selecionada` quando handleFileSelect e chamado
-- `envio_confirmado` quando handleConfirmSend e chamado
-- Passar ficha_id para os logs apos retorno da Edge Function
+**2. Edge Function `processar-ficha/index.ts`**
+- Na criacao da ficha: INSERT na `log_processo_ficha` com `ficha_id`, `edge_function_inicio` e `ficha_criada`
+- Apos upload: UPDATE setando `upload_concluido`
+- Antes de chamar webhook: UPDATE setando `webhook_enviado`
+- Ao receber resposta: UPDATE setando `webhook_resposta`
+- Apos salvar dados: UPDATE setando `ficha_processada`
 
-**3. `supabase/functions/processar-ficha/index.ts`** - Inserir logs nas etapas:
-- `edge_function_inicio`
-- `ficha_criada`
-- `upload_concluido`
-- `webhook_enviado`
-- `webhook_resposta`
-- `ficha_processada`
+**3. Webhook externo (feito por voce)**
+- O webhook externo pode fazer UPDATE diretamente na tabela via API do Supabase, preenchendo as colunas:
+  - `webhook_extract`, `webhook_bucket`, `webhook_atualiza`, `webhook_gpt`, `webhook_parser_dados`, `webhook_return`
+- Para isso, basta chamar a API REST do Supabase com a service role key ou anon key com o token adequado
 
-**4. `src/pages/EditarFicha.tsx`** - Inserir log na etapa:
-- `salvamento_manual` dentro do executeSave()
+**4. Remover logs antigos do frontend**
+- Remover as chamadas de `logEtapa` que foram adicionadas em `NewRegistration.tsx` e `EditarFicha.tsx` (as etapas `foto_selecionada`, `envio_confirmado` e `salvamento_manual` nao estao mais no escopo)
 
 ### Detalhes tecnicos
 
 **Migration SQL:**
 ```sql
+DROP TABLE IF EXISTS log_processo_ficha;
+
 CREATE TABLE log_processo_ficha (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  ficha_id uuid NOT NULL,
-  etapa text NOT NULL,
-  timestamp timestamptz NOT NULL DEFAULT now(),
-  detalhes jsonb DEFAULT '{}',
+  ficha_id uuid PRIMARY KEY,
+  edge_function_inicio timestamptz,
+  ficha_criada timestamptz,
+  upload_concluido timestamptz,
+  webhook_enviado timestamptz,
+  webhook_extract timestamptz,
+  webhook_bucket timestamptz,
+  webhook_atualiza timestamptz,
+  webhook_gpt timestamptz,
+  webhook_parser_dados timestamptz,
+  webhook_return timestamptz,
+  webhook_resposta timestamptz,
+  ficha_processada timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -84,6 +75,11 @@ ALTER TABLE log_processo_ficha ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Usuarios autenticados podem inserir logs"
   ON log_processo_ficha FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Usuarios autenticados podem atualizar logs"
+  ON log_processo_ficha FOR UPDATE
+  USING (true)
   WITH CHECK (true);
 
 CREATE POLICY "Gestores e admins veem logs"
@@ -95,16 +91,25 @@ CREATE POLICY "Gestores e admins veem logs"
   );
 ```
 
-**Funcao helper para inserir log (usada no frontend):**
+**Edge Function - exemplo de uso:**
 ```typescript
-const logEtapa = async (fichaId: string, etapa: string, detalhes?: any) => {
-  await supabase.from('log_processo_ficha').insert({
-    ficha_id: fichaId,
-    etapa,
-    detalhes: detalhes || {},
-  });
-};
+// INSERT ao iniciar
+await supabaseClient.from('log_processo_ficha').insert({
+  ficha_id: ficha.id,
+  edge_function_inicio: new Date().toISOString(),
+  ficha_criada: new Date().toISOString(),
+});
+
+// UPDATE ao completar upload
+await supabaseClient.from('log_processo_ficha')
+  .update({ upload_concluido: new Date().toISOString() })
+  .eq('ficha_id', ficha.id);
 ```
 
-**Na Edge Function, logs inseridos diretamente via supabaseClient.**
+**Webhook externo - exemplo de chamada (HTTP):**
+```text
+PATCH https://pukcbqfjzswqmjkhwzfk.supabase.co/rest/v1/log_processo_ficha?ficha_id=eq.<ID>
+Headers: apikey, Authorization
+Body: { "webhook_extract": "2026-02-10T12:00:00Z" }
+```
 
