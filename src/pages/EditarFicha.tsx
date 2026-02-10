@@ -274,11 +274,6 @@ export default function EditarFicha() {
           if (fichaAtualizada.status === 'erro') {
             setIsProcessing(false);
             
-            toast({
-              title: "Erro ao processar",
-              description: "Não foi possível processar a imagem. Você pode preencher manualmente.",
-              variant: "destructive"
-            });
           }
         }
       )
@@ -307,11 +302,6 @@ export default function EditarFicha() {
 
       setFicha((prev: any) => prev ? { ...prev, status: 'erro' } : prev);
 
-      toast({
-        title: "Tempo esgotado",
-        description: "Não foi possível processar a ficha. Preencha manualmente ou tente novamente.",
-        variant: "destructive"
-      });
     }, tempoRestante);
 
     return () => clearTimeout(timer);
