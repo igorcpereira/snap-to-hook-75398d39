@@ -348,6 +348,7 @@ export type Database = {
           ficha_criada: string | null
           ficha_id: string
           ficha_processada: string | null
+          sucesso: boolean
           upload_concluido: string | null
           webhook_atualiza: string | null
           webhook_bucket: string | null
@@ -364,6 +365,7 @@ export type Database = {
           ficha_criada?: string | null
           ficha_id: string
           ficha_processada?: string | null
+          sucesso?: boolean
           upload_concluido?: string | null
           webhook_atualiza?: string | null
           webhook_bucket?: string | null
@@ -380,6 +382,7 @@ export type Database = {
           ficha_criada?: string | null
           ficha_id?: string
           ficha_processada?: string | null
+          sucesso?: boolean
           upload_concluido?: string | null
           webhook_atualiza?: string | null
           webhook_bucket?: string | null

@@ -39,10 +39,10 @@ async function processWebhookInBackground(
     console.log('Webhook encontrado, enviando requisição em background...')
 
     // Log: webhook_enviado
-    await supabaseClient.from('log_processo_ficha')
+    const { error: logWebhookEnviadoErr } = await supabaseClient.from('log_processo_ficha')
       .update({ webhook_enviado: new Date().toISOString() })
-      .eq('ficha_id', fichaId)
-      .catch((e: any) => console.error('Erro log:', e));
+      .eq('ficha_id', fichaId);
+    if (logWebhookEnviadoErr) console.error('Erro log:', logWebhookEnviadoErr);
 
     // Prepara FormData para enviar ao webhook
     const webhookFormData = new FormData()
@@ -71,10 +71,10 @@ async function processWebhookInBackground(
       console.log('Resposta completa do webhook:', JSON.stringify(webhookData, null, 2))
 
       // Log: webhook_resposta
-      await supabaseClient.from('log_processo_ficha')
+      const { error: logRespostaErr } = await supabaseClient.from('log_processo_ficha')
         .update({ webhook_resposta: new Date().toISOString() })
-        .eq('ficha_id', fichaId)
-        .catch((e: any) => console.error('Erro log:', e));
+        .eq('ficha_id', fichaId);
+      if (logRespostaErr) console.error('Erro log:', logRespostaErr);
 
       // Webhook retorna array, extrair primeiro elemento
       const resultado = Array.isArray(webhookData) ? webhookData[0] : webhookData
@@ -266,10 +266,10 @@ async function processWebhookInBackground(
         console.log('Ficha atualizada com sucesso! Dados salvos:', updateData)
 
         // Log: ficha_processada
-        await supabaseClient.from('log_processo_ficha')
+        const { error: logProcessadaErr } = await supabaseClient.from('log_processo_ficha')
           .update({ ficha_processada: new Date().toISOString() })
-          .eq('ficha_id', fichaId)
-          .catch((e: any) => console.error('Erro log:', e));
+          .eq('ficha_id', fichaId);
+        if (logProcessadaErr) console.error('Erro log:', logProcessadaErr);
       } else {
         console.error('Webhook retornou erro:', resultado.erro || 'Erro desconhecido')
         throw new Error(resultado.erro || 'Erro no processamento da ficha')
@@ -339,11 +339,12 @@ Deno.serve(async (req) => {
 
     // Log: INSERT na nova tabela de log (coluna por etapa)
     const agora = new Date().toISOString();
-    await supabaseClient.from('log_processo_ficha').insert({
+    const { error: logInsertError } = await supabaseClient.from('log_processo_ficha').insert({
       ficha_id: ficha.id,
       edge_function_inicio: agora,
       ficha_criada: agora,
-    }).catch((e: any) => console.error('Erro log insert:', e));
+    });
+    if (logInsertError) console.error('Erro log insert:', logInsertError);
 
     // 2. Faz upload da imagem para o Storage
     const fileName = `${ficha.id}_${Date.now()}.${file.name.split('.').pop()}`
@@ -364,10 +365,10 @@ Deno.serve(async (req) => {
     console.log('Upload concluído:', fileName)
 
     // Log: upload_concluido
-    await supabaseClient.from('log_processo_ficha')
+    const { error: logUploadErr } = await supabaseClient.from('log_processo_ficha')
       .update({ upload_concluido: new Date().toISOString() })
-      .eq('ficha_id', ficha.id)
-      .catch((e: any) => console.error('Erro log:', e));
+      .eq('ficha_id', ficha.id);
+    if (logUploadErr) console.error('Erro log:', logUploadErr);
 
     // 3. Atualiza a ficha com a URL do storage
     await supabaseClient
