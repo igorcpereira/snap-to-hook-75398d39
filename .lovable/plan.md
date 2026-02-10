@@ -1,115 +1,159 @@
 
 
-## Reestruturar tabela `log_processo_ficha` para abordagem de coluna por etapa
+# Timeout e deteccao de erro para fichas presas
 
-### Conceito
+## Problema
 
-Em vez de multiplas linhas por ficha, teremos **uma unica linha por ficha** onde cada coluna representa o timestamp de uma etapa do processo. Isso facilita calculos de latencia e permite que o webhook externo atualize colunas diretamente.
+Quando o webhook falha silenciosamente (sem retornar erro), a ficha fica com status "pendente" indefinidamente. O usuario fica vendo "Processando..." para sempre, sem feedback.
 
-### Nova estrutura da tabela
+## Solucao
 
-| Coluna | Tipo | Descricao |
-|--------|------|-----------|
-| ficha_id | uuid (PK) | ID da ficha (chave primaria, sem auto-generate) |
-| edge_function_inicio | timestamptz | Edge Function recebeu a requisicao |
-| ficha_criada | timestamptz | Ficha inserida no banco |
-| upload_concluido | timestamptz | Imagem salva no Storage |
-| webhook_enviado | timestamptz | Requisicao enviada ao webhook externo |
-| webhook_extract | timestamptz | Webhook: extracao da imagem |
-| webhook_bucket | timestamptz | Webhook: processamento do bucket |
-| webhook_atualiza | timestamptz | Webhook: atualizacao de dados |
-| webhook_gpt | timestamptz | Webhook: chamada ao GPT |
-| webhook_parser_dados | timestamptz | Webhook: parsing dos dados extraidos |
-| webhook_return | timestamptz | Webhook: retorno preparado |
-| webhook_resposta | timestamptz | Edge Function recebeu resposta do webhook |
-| ficha_processada | timestamptz | Dados do webhook salvos na ficha |
-| created_at | timestamptz | Default now() |
+Duas camadas de protecao:
 
-### Alteracoes necessarias
+### 1. Timeout no frontend (EditarFicha)
 
-**1. Migration SQL**
-- Dropar a tabela `log_processo_ficha` atual (que usa o modelo multi-linha)
-- Criar nova tabela com a estrutura acima, usando `ficha_id` como PK
-- RLS: INSERT e UPDATE para autenticados, SELECT para gestores/admins
-- Politica de UPDATE necessaria (antes nao tinha) pois agora o webhook externo precisa atualizar colunas
+Quando o usuario abre uma ficha que esta "processando" (sem `codigo_ficha` e status `pendente`), iniciar um timer de **2 minutos**. Se apos esse tempo a ficha ainda nao foi atualizada:
 
-**2. Edge Function `processar-ficha/index.ts`**
-- Na criacao da ficha: INSERT na `log_processo_ficha` com `ficha_id`, `edge_function_inicio` e `ficha_criada`
-- Apos upload: UPDATE setando `upload_concluido`
-- Antes de chamar webhook: UPDATE setando `webhook_enviado`
-- Ao receber resposta: UPDATE setando `webhook_resposta`
-- Apos salvar dados: UPDATE setando `ficha_processada`
+- Parar o indicador de processamento
+- Mostrar um toast informando que nao foi possivel ler a ficha automaticamente
+- Atualizar o status da ficha para `erro` no banco
+- Permitir que o usuario preencha manualmente
 
-**3. Webhook externo (feito por voce)**
-- O webhook externo pode fazer UPDATE diretamente na tabela via API do Supabase, preenchendo as colunas:
-  - `webhook_extract`, `webhook_bucket`, `webhook_atualiza`, `webhook_gpt`, `webhook_parser_dados`, `webhook_return`
-- Para isso, basta chamar a API REST do Supabase com a service role key ou anon key com o token adequado
+### 2. Deteccao de fichas antigas na carga inicial
 
-**4. Remover logs antigos do frontend**
-- Remover as chamadas de `logEtapa` que foram adicionadas em `NewRegistration.tsx` e `EditarFicha.tsx` (as etapas `foto_selecionada`, `envio_confirmado` e `salvamento_manual` nao estao mais no escopo)
+Ao carregar uma ficha, verificar se ela esta "pendente" **ha mais de 3 minutos** (comparando `created_at` com agora). Se sim:
 
-### Detalhes tecnicos
+- Nao ativar o indicador de processamento
+- Marcar automaticamente como `erro`
+- Mostrar mensagem: "A leitura automatica desta ficha expirou. Preencha manualmente."
 
-**Migration SQL:**
-```sql
-DROP TABLE IF EXISTS log_processo_ficha;
+### 3. Botao de reprocessar
 
-CREATE TABLE log_processo_ficha (
-  ficha_id uuid PRIMARY KEY,
-  edge_function_inicio timestamptz,
-  ficha_criada timestamptz,
-  upload_concluido timestamptz,
-  webhook_enviado timestamptz,
-  webhook_extract timestamptz,
-  webhook_bucket timestamptz,
-  webhook_atualiza timestamptz,
-  webhook_gpt timestamptz,
-  webhook_parser_dados timestamptz,
-  webhook_return timestamptz,
-  webhook_resposta timestamptz,
-  ficha_processada timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
+Na tela de edicao, quando a ficha estiver com status `erro`, exibir um botao "Tentar ler novamente" que:
 
-ALTER TABLE log_processo_ficha ENABLE ROW LEVEL SECURITY;
+- Reenvia a imagem do bucket para a edge function
+- Reseta o status para `pendente`
+- Reinicia o timer de timeout
 
-CREATE POLICY "Usuarios autenticados podem inserir logs"
-  ON log_processo_ficha FOR INSERT
-  WITH CHECK (true);
+---
 
-CREATE POLICY "Usuarios autenticados podem atualizar logs"
-  ON log_processo_ficha FOR UPDATE
-  USING (true)
-  WITH CHECK (true);
+## Detalhes tecnicos
 
-CREATE POLICY "Gestores e admins veem logs"
-  ON log_processo_ficha FOR SELECT
-  USING (
-    has_role(auth.uid(), 'gestor'::app_role)
-    OR has_role(auth.uid(), 'master'::app_role)
-    OR has_role(auth.uid(), 'admin'::app_role)
-  );
-```
+### Arquivo: `src/pages/EditarFicha.tsx`
 
-**Edge Function - exemplo de uso:**
+**Mudanca 1 - Deteccao de ficha expirada no carregamento (dentro do `loadFicha`):**
+
 ```typescript
-// INSERT ao iniciar
-await supabaseClient.from('log_processo_ficha').insert({
-  ficha_id: ficha.id,
-  edge_function_inicio: new Date().toISOString(),
-  ficha_criada: new Date().toISOString(),
-});
+// Apos carregar fichaData, antes de setar isProcessing:
+const tempoDecorrido = Date.now() - new Date(fichaData.created_at).getTime();
+const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutos
 
-// UPDATE ao completar upload
-await supabaseClient.from('log_processo_ficha')
-  .update({ upload_concluido: new Date().toISOString() })
-  .eq('ficha_id', ficha.id);
+if (!fichaData.codigo_ficha && fichaData.status === 'pendente') {
+  if (tempoDecorrido > TIMEOUT_MS) {
+    // Ficha expirou - marcar como erro
+    await supabase
+      .from('fichas')
+      .update({ status: 'erro' })
+      .eq('id', id);
+    fichaData.status = 'erro';
+    toast({
+      title: "Leitura expirada",
+      description: "Nao foi possivel ler esta ficha automaticamente. Preencha manualmente ou tente novamente.",
+      variant: "destructive"
+    });
+  } else {
+    setIsProcessing(true);
+  }
+}
 ```
 
-**Webhook externo - exemplo de chamada (HTTP):**
-```text
-PATCH https://pukcbqfjzswqmjkhwzfk.supabase.co/rest/v1/log_processo_ficha?ficha_id=eq.<ID>
-Headers: apikey, Authorization
-Body: { "webhook_extract": "2026-02-10T12:00:00Z" }
+**Mudanca 2 - Timer de timeout enquanto processa:**
+
+```typescript
+// Novo useEffect para timeout de processamento
+useEffect(() => {
+  if (!isProcessing || !ficha?.created_at) return;
+
+  const tempoDecorrido = Date.now() - new Date(ficha.created_at).getTime();
+  const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutos
+  const tempoRestante = Math.max(TIMEOUT_MS - tempoDecorrido, 0);
+
+  const timer = setTimeout(async () => {
+    setIsProcessing(false);
+    await supabase
+      .from('fichas')
+      .update({ status: 'erro' })
+      .eq('id', id);
+
+    toast({
+      title: "Tempo esgotado",
+      description: "Nao foi possivel processar a ficha. Preencha manualmente.",
+      variant: "destructive"
+    });
+  }, tempoRestante);
+
+  return () => clearTimeout(timer);
+}, [isProcessing, ficha?.created_at, id]);
 ```
 
+**Mudanca 3 - Indicador visual de erro e botao de reprocessar:**
+
+Na area onde aparece o indicador de "Processando...", adicionar condicao para status `erro`:
+
+```typescript
+{ficha?.status === 'erro' && (
+  <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 flex items-center justify-between">
+    <p className="text-sm text-destructive">
+      Nao foi possivel ler esta ficha automaticamente.
+    </p>
+    <Button size="sm" variant="outline" onClick={handleReprocessar}>
+      Tentar novamente
+    </Button>
+  </div>
+)}
+```
+
+**Mudanca 4 - Funcao de reprocessamento:**
+
+```typescript
+const handleReprocessar = async () => {
+  if (!id || !ficha?.url_bucket) return;
+
+  setIsProcessing(true);
+
+  // Baixa a imagem do bucket
+  const { data: fileData } = await supabase.storage
+    .from('fichas')
+    .download(ficha.url_bucket);
+
+  if (!fileData) {
+    toast({ title: "Imagem nao encontrada no storage", variant: "destructive" });
+    setIsProcessing(false);
+    return;
+  }
+
+  // Reseta status
+  await supabase
+    .from('fichas')
+    .update({ status: 'pendente' })
+    .eq('id', id);
+
+  // Reenvia para a edge function de processamento via webhook direto
+  // (reutiliza a logica existente de processWebhookInBackground)
+  const formData = new FormData();
+  const file = new File([fileData], ficha.url_bucket, { type: 'image/jpeg' });
+  formData.append('image', file);
+  formData.append('ficha_id', id);
+
+  // Chama o webhook diretamente
+  // Ou alternativamente, cria uma edge function dedicada para reprocessar
+};
+```
+
+### Resumo das alteracoes
+
+| Arquivo | O que muda |
+|---------|-----------|
+| `src/pages/EditarFicha.tsx` | Adiciona timeout de 2min, deteccao de fichas expiradas (3min), botao de reprocessar, feedback visual de erro |
+
+Nenhuma edge function nova e necessaria. O reprocessamento pode reutilizar o fluxo existente chamando a edge function `processar-ficha` novamente com a imagem do bucket.
