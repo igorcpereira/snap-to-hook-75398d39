@@ -344,27 +344,51 @@ export type Database = {
       log_processo_ficha: {
         Row: {
           created_at: string
-          detalhes: Json | null
-          etapa: string
+          edge_function_inicio: string | null
+          ficha_criada: string | null
           ficha_id: string
-          id: string
-          timestamp: string
+          ficha_processada: string | null
+          upload_concluido: string | null
+          webhook_atualiza: string | null
+          webhook_bucket: string | null
+          webhook_enviado: string | null
+          webhook_extract: string | null
+          webhook_gpt: string | null
+          webhook_parser_dados: string | null
+          webhook_resposta: string | null
+          webhook_return: string | null
         }
         Insert: {
           created_at?: string
-          detalhes?: Json | null
-          etapa: string
+          edge_function_inicio?: string | null
+          ficha_criada?: string | null
           ficha_id: string
-          id?: string
-          timestamp?: string
+          ficha_processada?: string | null
+          upload_concluido?: string | null
+          webhook_atualiza?: string | null
+          webhook_bucket?: string | null
+          webhook_enviado?: string | null
+          webhook_extract?: string | null
+          webhook_gpt?: string | null
+          webhook_parser_dados?: string | null
+          webhook_resposta?: string | null
+          webhook_return?: string | null
         }
         Update: {
           created_at?: string
-          detalhes?: Json | null
-          etapa?: string
+          edge_function_inicio?: string | null
+          ficha_criada?: string | null
           ficha_id?: string
-          id?: string
-          timestamp?: string
+          ficha_processada?: string | null
+          upload_concluido?: string | null
+          webhook_atualiza?: string | null
+          webhook_bucket?: string | null
+          webhook_enviado?: string | null
+          webhook_extract?: string | null
+          webhook_gpt?: string | null
+          webhook_parser_dados?: string | null
+          webhook_resposta?: string | null
+          webhook_return?: string | null
         }
         Relationships: []
       }
