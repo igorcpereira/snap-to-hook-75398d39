@@ -39,9 +39,10 @@ async function processWebhookInBackground(
     console.log('Webhook encontrado, enviando requisição em background...')
 
     // Log: webhook_enviado
-    await supabaseClient.from('log_processo_ficha').insert({
-      ficha_id: fichaId, etapa: 'webhook_enviado', detalhes: {}
-    }).catch((e: any) => console.error('Erro log:', e));
+    await supabaseClient.from('log_processo_ficha')
+      .update({ webhook_enviado: new Date().toISOString() })
+      .eq('ficha_id', fichaId)
+      .catch((e: any) => console.error('Erro log:', e));
 
     // Prepara FormData para enviar ao webhook
     const webhookFormData = new FormData()
@@ -70,9 +71,10 @@ async function processWebhookInBackground(
       console.log('Resposta completa do webhook:', JSON.stringify(webhookData, null, 2))
 
       // Log: webhook_resposta
-      await supabaseClient.from('log_processo_ficha').insert({
-        ficha_id: fichaId, etapa: 'webhook_resposta', detalhes: { status: webhookResponse.status }
-      }).catch((e: any) => console.error('Erro log:', e));
+      await supabaseClient.from('log_processo_ficha')
+        .update({ webhook_resposta: new Date().toISOString() })
+        .eq('ficha_id', fichaId)
+        .catch((e: any) => console.error('Erro log:', e));
 
       // Webhook retorna array, extrair primeiro elemento
       const resultado = Array.isArray(webhookData) ? webhookData[0] : webhookData
@@ -264,9 +266,10 @@ async function processWebhookInBackground(
         console.log('Ficha atualizada com sucesso! Dados salvos:', updateData)
 
         // Log: ficha_processada
-        await supabaseClient.from('log_processo_ficha').insert({
-          ficha_id: fichaId, etapa: 'ficha_processada', detalhes: { campos_atualizados: Object.keys(updateData) }
-        }).catch((e: any) => console.error('Erro log:', e));
+        await supabaseClient.from('log_processo_ficha')
+          .update({ ficha_processada: new Date().toISOString() })
+          .eq('ficha_id', fichaId)
+          .catch((e: any) => console.error('Erro log:', e));
       } else {
         console.error('Webhook retornou erro:', resultado.erro || 'Erro desconhecido')
         throw new Error(resultado.erro || 'Erro no processamento da ficha')
@@ -316,19 +319,6 @@ Deno.serve(async (req) => {
 
     console.log('Recebido arquivo:', file.name, file.type, file.size)
 
-    // Log: edge_function_inicio
-    const logEtapa = async (fichaId: string, etapa: string, detalhes?: any) => {
-      try {
-        await supabaseClient.from('log_processo_ficha').insert({
-          ficha_id: fichaId,
-          etapa,
-          detalhes: detalhes || {},
-        });
-      } catch (e) {
-        console.error('Erro ao registrar log:', e);
-      }
-    };
-
     // 1. Cria a ficha com status pendente
     const { data: ficha, error: fichaError } = await supabaseClient
       .from('fichas')
@@ -347,9 +337,13 @@ Deno.serve(async (req) => {
 
     console.log('Ficha criada:', ficha.id)
 
-    // Log: edge_function_inicio + ficha_criada
-    await logEtapa(ficha.id, 'edge_function_inicio', { arquivo: file.name, tamanho: file.size });
-    await logEtapa(ficha.id, 'ficha_criada');
+    // Log: INSERT na nova tabela de log (coluna por etapa)
+    const agora = new Date().toISOString();
+    await supabaseClient.from('log_processo_ficha').insert({
+      ficha_id: ficha.id,
+      edge_function_inicio: agora,
+      ficha_criada: agora,
+    }).catch((e: any) => console.error('Erro log insert:', e));
 
     // 2. Faz upload da imagem para o Storage
     const fileName = `${ficha.id}_${Date.now()}.${file.name.split('.').pop()}`
@@ -370,7 +364,10 @@ Deno.serve(async (req) => {
     console.log('Upload concluído:', fileName)
 
     // Log: upload_concluido
-    await logEtapa(ficha.id, 'upload_concluido', { fileName });
+    await supabaseClient.from('log_processo_ficha')
+      .update({ upload_concluido: new Date().toISOString() })
+      .eq('ficha_id', ficha.id)
+      .catch((e: any) => console.error('Erro log:', e));
 
     // 3. Atualiza a ficha com a URL do storage
     await supabaseClient

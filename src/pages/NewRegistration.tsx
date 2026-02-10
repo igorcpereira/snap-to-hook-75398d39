@@ -48,9 +48,7 @@ const NewRegistration = () => {
       console.log('Edge Function resposta:', data);
 
       if (data.ficha_id) {
-        // Registrar logs de etapa
-        logEtapa(data.ficha_id, 'foto_selecionada', { tipo: selectedFile?.type, tamanho: selectedFile?.size });
-        logEtapa(data.ficha_id, 'envio_confirmado', { tempo_resposta_edge_ms: Date.now() });
+
 
         toast.success("Ficha criada! Aguardando processamento...");
         navigate(`/editar-ficha/${data.ficha_id}`, {
@@ -107,17 +105,8 @@ const NewRegistration = () => {
     cameraInputRef.current?.click();
   };
 
-  const logEtapa = async (fichaId: string, etapa: string, detalhes?: any) => {
-    try {
-      await supabase.from('log_processo_ficha' as any).insert({
-        ficha_id: fichaId,
-        etapa,
-        detalhes: detalhes || {},
-      });
-    } catch (e) {
-      console.error('Erro ao registrar log:', e);
-    }
-  };
+
+
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
