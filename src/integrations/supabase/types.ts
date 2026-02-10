@@ -357,7 +357,6 @@ export type Database = {
           webhook_gpt: string | null
           webhook_parser_dados: string | null
           webhook_resposta: string | null
-          webhook_return: string | null
         }
         Insert: {
           created_at?: string
@@ -374,7 +373,6 @@ export type Database = {
           webhook_gpt?: string | null
           webhook_parser_dados?: string | null
           webhook_resposta?: string | null
-          webhook_return?: string | null
         }
         Update: {
           created_at?: string
@@ -391,7 +389,6 @@ export type Database = {
           webhook_gpt?: string | null
           webhook_parser_dados?: string | null
           webhook_resposta?: string | null
-          webhook_return?: string | null
         }
         Relationships: []
       }
