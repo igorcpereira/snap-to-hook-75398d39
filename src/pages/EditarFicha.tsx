@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, Image as ImageIcon, X, User, Check, CloudOff, Sparkles } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, X, User, Check, CloudOff, Sparkles, RefreshCw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,7 +104,24 @@ export default function EditarFicha() {
 
         // Ativar processamento apenas se não tem codigo_ficha E status é pendente
         if (!fichaData.codigo_ficha && fichaData.status === 'pendente') {
-          setIsProcessing(true);
+          const tempoDecorrido = Date.now() - new Date(fichaData.created_at).getTime();
+          const TIMEOUT_EXPIRADO_MS = 3 * 60 * 1000; // 3 minutos
+
+          if (tempoDecorrido > TIMEOUT_EXPIRADO_MS) {
+            // Ficha expirou - marcar como erro
+            await supabase
+              .from('fichas')
+              .update({ status: 'erro' })
+              .eq('id', id);
+            fichaData.status = 'erro';
+            toast({
+              title: "Leitura expirada",
+              description: "Não foi possível ler esta ficha automaticamente. Preencha manualmente ou tente novamente.",
+              variant: "destructive"
+            });
+          } else {
+            setIsProcessing(true);
+          }
         }
 
         // Buscar tags do cliente se houver cliente_id
@@ -272,6 +289,64 @@ export default function EditarFicha() {
       supabase.removeChannel(channel);
     };
   }, [id, isAudioRecording, isAudioProcessing]);
+
+  // Timeout de processamento: se ficar pendente por mais de 2 minutos, marcar como erro
+  useEffect(() => {
+    if (!isProcessing || !ficha?.created_at) return;
+
+    const tempoDecorrido = Date.now() - new Date(ficha.created_at).getTime();
+    const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutos
+    const tempoRestante = Math.max(TIMEOUT_MS - tempoDecorrido, 0);
+
+    const timer = setTimeout(async () => {
+      setIsProcessing(false);
+      await supabase
+        .from('fichas')
+        .update({ status: 'erro' })
+        .eq('id', id);
+
+      setFicha((prev: any) => prev ? { ...prev, status: 'erro' } : prev);
+
+      toast({
+        title: "Tempo esgotado",
+        description: "Não foi possível processar a ficha. Preencha manualmente ou tente novamente.",
+        variant: "destructive"
+      });
+    }, tempoRestante);
+
+    return () => clearTimeout(timer);
+  }, [isProcessing, ficha?.created_at, id]);
+
+  // Função de reprocessamento
+  const handleReprocessar = async () => {
+    if (!id || !ficha?.url_bucket) return;
+
+    setIsProcessing(true);
+    setFicha((prev: any) => prev ? { ...prev, status: 'pendente', created_at: new Date().toISOString() } : prev);
+
+    try {
+      // Reseta status e created_at para reiniciar o timer
+      await supabase
+        .from('fichas')
+        .update({ status: 'pendente', created_at: new Date().toISOString() })
+        .eq('id', id);
+
+      // Chama edge function dedicada de reprocessamento
+      const { error } = await supabase.functions.invoke('reprocessar-ficha', {
+        body: { ficha_id: id },
+      });
+
+      if (error) {
+        console.error('Erro ao reprocessar:', error);
+        toast({ title: "Erro ao reprocessar", description: "Tente novamente mais tarde.", variant: "destructive" });
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      console.error('Erro ao reprocessar ficha:', error);
+      toast({ title: "Erro ao reprocessar", variant: "destructive" });
+      setIsProcessing(false);
+    }
+  };
 
   const handleTranscription = (text: string) => {
     console.log('Texto recebido da transcrição:', text);
@@ -749,10 +824,18 @@ export default function EditarFicha() {
             </div>
           )}
 
-          {ficha?.status === 'erro' && isNewFicha && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm font-medium text-red-900 dark:text-red-100">Erro ao processar imagem</p>
-              <p className="text-xs text-red-700 dark:text-red-300 mt-1">Você pode preencher os campos manualmente ou reenviar a imagem.</p>
+          {ficha?.status === 'erro' && !isProcessing && (
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg flex items-center justify-between gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-destructive">Não foi possível ler esta ficha automaticamente.</p>
+                <p className="text-xs text-destructive/70 mt-1">Preencha manualmente ou tente novamente.</p>
+              </div>
+              {ficha?.url_bucket && (
+                <Button size="sm" variant="outline" onClick={handleReprocessar} className="flex-shrink-0">
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Tentar novamente
+                </Button>
+              )}
             </div>
           )}
 
