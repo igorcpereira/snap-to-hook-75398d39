@@ -40,24 +40,28 @@ Deno.serve(async (req) => {
       throw new Error('Ficha não encontrada ou sem imagem')
     }
 
-    // Extrair path relativo da URL completa (se necessário)
-    let storagePath = ficha.url_bucket
-    const bucketPrefix = '/storage/v1/object/public/fichas/'
-    const prefixIndex = storagePath.indexOf(bucketPrefix)
-    if (prefixIndex !== -1) {
-      storagePath = storagePath.substring(prefixIndex + bucketPrefix.length)
-    }
+    // Baixar imagem - se url_bucket for URL completa, fazer fetch direto
+    let fileData: Blob
+    const urlBucket = ficha.url_bucket
 
-    console.log('Baixando imagem do path:', storagePath)
-
-    // Baixar imagem do bucket
-    const { data: fileData, error: downloadError } = await supabaseClient.storage
-      .from('fichas')
-      .download(storagePath)
-
-    if (downloadError || !fileData) {
-      console.error('Erro ao baixar:', downloadError)
-      throw new Error('Erro ao baixar imagem do storage')
+    if (urlBucket.startsWith('http')) {
+      console.log('Baixando imagem via URL pública:', urlBucket)
+      const response = await fetch(urlBucket)
+      if (!response.ok) {
+        console.error('Erro ao baixar via fetch:', response.status, response.statusText)
+        throw new Error('Erro ao baixar imagem do storage')
+      }
+      fileData = await response.blob()
+    } else {
+      console.log('Baixando imagem do storage path:', urlBucket)
+      const { data, error: downloadError } = await supabaseClient.storage
+        .from('fichas')
+        .download(urlBucket)
+      if (downloadError || !data) {
+        console.error('Erro ao baixar:', downloadError)
+        throw new Error('Erro ao baixar imagem do storage')
+      }
+      fileData = data
     }
 
     // Buscar webhook
@@ -77,7 +81,8 @@ Deno.serve(async (req) => {
     const backgroundProcess = async () => {
       try {
         const webhookFormData = new FormData()
-        const file = new File([fileData], ficha.url_bucket!, { type: 'image/jpeg' })
+        const fileName = urlBucket.startsWith('http') ? urlBucket.split('/').pop()! : urlBucket
+        const file = new File([fileData], fileName, { type: 'image/jpeg' })
         webhookFormData.append('image', file)
         webhookFormData.append('ficha_id', ficha_id)
 
