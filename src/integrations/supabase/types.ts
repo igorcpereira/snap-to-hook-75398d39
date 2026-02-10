@@ -341,6 +341,33 @@ export type Database = {
           },
         ]
       }
+      log_processo_ficha: {
+        Row: {
+          created_at: string
+          detalhes: Json | null
+          etapa: string
+          ficha_id: string
+          id: string
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          detalhes?: Json | null
+          etapa: string
+          ficha_id: string
+          id?: string
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string
+          detalhes?: Json | null
+          etapa?: string
+          ficha_id?: string
+          id?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           ativo: boolean
