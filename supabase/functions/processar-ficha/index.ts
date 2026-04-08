@@ -99,8 +99,7 @@ async function processWebhookInBackground(
         
         // Tipo: normalizar para primeira letra maiúscula
         if (resultado.tipo != null && resultado.tipo !== '') {
-          const tipoNormalizado = resultado.tipo.toLowerCase()
-          updateData.tipo = tipoNormalizado.charAt(0).toUpperCase() + tipoNormalizado.slice(1)
+          updateData.tipo = resultado.tipo.toLowerCase()
         } else {
           camposIgnorados.push('tipo')
         }

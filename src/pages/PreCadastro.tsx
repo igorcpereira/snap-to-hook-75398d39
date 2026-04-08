@@ -380,7 +380,7 @@ const PreCadastro = () => {
                     </div>
                     
                     <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${getTipoColor(card.tipo)}`}>
+                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded capitalize ${getTipoColor(card.tipo)}`}>
                         {card.tipo || "-"}
                       </span>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={e => handleDeleteClick(e, card.id)}>

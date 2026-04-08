@@ -36,7 +36,7 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
     nome_cliente: "",
     telefone_cliente: "",
     codigo_ficha: "",
-    tipo: "Aluguel",
+    tipo: "aluguel",
     status: "pendente",
     vendedor_responsavel: "",
     data_retirada: undefined as Date | undefined,
@@ -81,7 +81,7 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
           nome_cliente: ficha.nome_cliente || "",
           telefone_cliente: ficha.telefone_cliente || "",
           codigo_ficha: ficha.codigo_ficha || "",
-          tipo: ficha.tipo || "Aluguel",
+          tipo: ficha.tipo || "aluguel",
           status: ficha.status || "pendente",
           vendedor_responsavel: ficha.vendedor_responsavel || "",
           data_retirada: parseDataSemFuso(ficha.data_retirada),
@@ -463,9 +463,9 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
                         <SelectValue placeholder="Selecione o tipo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Aluguel">Aluguel</SelectItem>
-                        <SelectItem value="Venda">Venda</SelectItem>
-                        <SelectItem value="Ajuste">Ajuste</SelectItem>
+                        <SelectItem value="aluguel">Aluguel</SelectItem>
+                        <SelectItem value="venda">Venda</SelectItem>
+                        <SelectItem value="ajuste">Ajuste</SelectItem>
                       </SelectContent>
                     </Select>
                   )}

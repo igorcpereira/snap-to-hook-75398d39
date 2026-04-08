@@ -68,9 +68,9 @@ export const FichaAtendimento = ({ data, processingTime }: FichaAtendimentoProps
     const telefone = formatarTelefone(data.telefone || data.cliente_telefone);
     
     const getTipo = () => {
-      if (data.tipo_ajuste) return 'Ajuste';
-      if (data.tipo_aluguel) return 'Aluguel';
-      if (data.tipo_venda) return 'Venda';
+      if (data.tipo_ajuste) return 'ajuste';
+      if (data.tipo_aluguel) return 'aluguel';
+      if (data.tipo_venda) return 'venda';
       return data.tipo || '-';
     };
     

@@ -56,7 +56,7 @@ export default function EditarFicha() {
     nome_cliente: "",
     telefone_cliente: "",
     codigo_ficha: "",
-    tipo: "Aluguel",
+    tipo: "aluguel",
     status: "pendente",
     vendedor_responsavel: "",
     data_retirada: undefined as Date | undefined,
@@ -140,7 +140,7 @@ export default function EditarFicha() {
           nome_cliente: fichaData.nome_cliente || "",
           telefone_cliente: fichaData.telefone_cliente || "",
           codigo_ficha: fichaData.codigo_ficha || "",
-          tipo: fichaData.tipo || "Aluguel",
+          tipo: fichaData.tipo || "aluguel",
           status: fichaData.status || "pendente",
           vendedor_responsavel: vendedorNome,
           data_retirada: parseDataSemFuso(fichaData.data_retirada),
@@ -890,9 +890,9 @@ export default function EditarFicha() {
                         <SelectValue placeholder="Selecione o tipo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Aluguel">Aluguel</SelectItem>
-                        <SelectItem value="Venda">Venda</SelectItem>
-                        <SelectItem value="Ajuste">Ajuste</SelectItem>
+                        <SelectItem value="aluguel">Aluguel</SelectItem>
+                        <SelectItem value="venda">Venda</SelectItem>
+                        <SelectItem value="ajuste">Ajuste</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

@@ -641,7 +641,7 @@ export type Database = {
         | "concluida"
         | "cancelada"
       status_ficha: "erro" | "pendente" | "ativa" | "baixa"
-      tipo_de_atendimento: "Aluguel" | "Venda" | "Ajuste"
+      tipo_de_atendimento: "aluguel" | "venda" | "ajuste"
       user_role: "Gestor" | "Franqueado" | "Vendedor"
     }
     CompositeTypes: {
@@ -787,7 +787,7 @@ export const Constants = {
         "cancelada",
       ],
       status_ficha: ["erro", "pendente", "ativa", "baixa"],
-      tipo_de_atendimento: ["Aluguel", "Venda", "Ajuste"],
+      tipo_de_atendimento: ["aluguel", "venda", "ajuste"],
       user_role: ["Gestor", "Franqueado", "Vendedor"],
     },
   },
