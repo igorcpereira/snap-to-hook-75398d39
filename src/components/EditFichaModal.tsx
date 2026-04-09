@@ -32,6 +32,7 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [signedImageUrl, setSignedImageUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     nome_cliente: "",
     telefone_cliente: "",
@@ -102,6 +103,29 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
     
     loadData();
   }, [ficha]);
+
+  // Gera URL assinada para imagem (bucket fichas é privado)
+  useEffect(() => {
+    if (!ficha?.url_bucket) {
+      setSignedImageUrl(null);
+      return;
+    }
+    const generateSignedUrl = async () => {
+      // Suporta dados antigos (URL completa) e novos (só filename)
+      const path = ficha.url_bucket.startsWith('http')
+        ? ficha.url_bucket.split('/fichas/').pop() ?? ficha.url_bucket
+        : ficha.url_bucket;
+      const { data, error } = await supabase.storage
+        .from('fichas')
+        .createSignedUrl(path, 3600);
+      if (error) {
+        console.error('Erro ao gerar URL assinada:', error);
+      } else {
+        setSignedImageUrl(data.signedUrl);
+      }
+    };
+    generateSignedUrl();
+  }, [ficha?.url_bucket]);
 
   const handleTranscription = (text: string) => {
     console.log('Texto recebido da transcrição:', text);
@@ -714,20 +738,20 @@ export function EditFichaModal({ open, onOpenChange, ficha, isLoading = false, o
                 <div className="flex flex-col items-center justify-center h-64 bg-destructive/10 rounded-lg border border-destructive/20">
                   <p className="text-destructive font-medium mb-2">{imageError}</p>
                   <p className="text-sm text-muted-foreground mb-4">URL: {ficha.url_bucket}</p>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
-                    onClick={() => window.open(ficha.url_bucket, '_blank')}
+                    onClick={() => window.open(signedImageUrl || '', '_blank')}
                   >
                     Tentar abrir em nova aba
                   </Button>
                 </div>
               )}
-              
+
               {/* Imagem */}
               {!imageError && (
-                <img 
-                  src={ficha.url_bucket} 
+                <img
+                  src={signedImageUrl || ''}
                   alt="Ficha original" 
                   className="w-full h-auto rounded-lg shadow-lg"
                   onLoad={handleImageLoad}

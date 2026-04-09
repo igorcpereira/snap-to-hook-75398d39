@@ -38,6 +38,7 @@ export default function EditarFicha() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [signedImageUrl, setSignedImageUrl] = useState<string | null>(null);
   const [ficha, setFicha] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [wasProcessed, setWasProcessed] = useState(false);
@@ -172,6 +173,29 @@ export default function EditarFicha() {
   useEffect(() => {
     codigoFichaRef.current = formData.codigo_ficha || null;
   }, [formData.codigo_ficha]);
+
+  // Gera URL assinada para imagem (bucket fichas é privado)
+  useEffect(() => {
+    if (!ficha?.url_bucket) {
+      setSignedImageUrl(null);
+      return;
+    }
+    const generateSignedUrl = async () => {
+      // Suporta dados antigos (URL completa) e novos (só filename)
+      const path = ficha.url_bucket.startsWith('http')
+        ? ficha.url_bucket.split('/fichas/').pop() ?? ficha.url_bucket
+        : ficha.url_bucket;
+      const { data, error } = await supabase.storage
+        .from('fichas')
+        .createSignedUrl(path, 3600);
+      if (error) {
+        console.error('Erro ao gerar URL assinada:', error);
+      } else {
+        setSignedImageUrl(data.signedUrl);
+      }
+    };
+    generateSignedUrl();
+  }, [ficha?.url_bucket]);
 
   // Subscrição Realtime para updates da ficha
   useEffect(() => {
@@ -1134,7 +1158,7 @@ export default function EditarFicha() {
             )}
             {ficha?.url_bucket && (
               <img
-                src={ficha.url_bucket}
+                src={signedImageUrl || ''}
                 alt="Ficha Original"
                 className="max-w-full max-h-[80vh] object-contain"
                 onLoad={handleImageLoad}
